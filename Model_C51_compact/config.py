@@ -31,6 +31,7 @@ TRAIN_CONFIG = {
 
 
 NET_CONFIG={
+    'case':'small', #large of small scenario experiments
     'Risk_Distort':1, #change the shape of risk or not
     'eta': 0.8 #how to alter the reward function
 }

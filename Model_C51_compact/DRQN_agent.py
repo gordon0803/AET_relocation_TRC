@@ -11,14 +11,7 @@ import tensorflow.contrib.slim as slim
 import config
 from scipy.stats import norm
 
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import tensor_shape
-from tensorflow.python.framework import tensor_util
-from tensorflow.python.ops import math_ops
-from tensorflow.python.ops import random_ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.layers import utils
-import numbers
+import tf_conv_net
 
 
 
@@ -111,16 +104,9 @@ class drqn_agent_efficient():
         imageIn = tf.reshape(self.scalarInput, shape=[-1, self.N_station, self.N_station, 5], name=myScope_main + 'in1')
         input_conv = tf.pad(imageIn, [[0, 0], [2, 2], [2, 2], [0, 0]], "REFLECT",
                             name=myScope_main + 'in2')  # reflect padding!
-        conv2 =tf.nn.leaky_relu(tf.layers.conv2d( \
-            inputs=input_conv, filters=16, \
-            kernel_size=[5, 5], strides=[2, 2], activation=None,reuse=None,padding='VALID', \
-            name=myScope_main + '_net_conv2'))
-        #bn = tf.layers.batch_normalization(conv2, training=self.training_phase,trainable=True)
-        conv3 = tf.nn.leaky_relu(tf.layers.conv2d( \
-            inputs=conv2, filters=32, \
-            kernel_size=[3, 3], strides=[1, 1], activation=None,reuse=None,padding='VALID', \
-            name=myScope_main + '_net_conv3'))
+
         #bn = tf.layers.batch_normalization(conv3, training=self.training_phase,trainable=True)
+        conv=tf_conv_net.build_convolution(myScope_main,input_conv,config.NET_CONFIG['case'])
 
         if self.use_gpu:
             print('Using CudnnLSTM')
@@ -130,7 +116,7 @@ class drqn_agent_efficient():
             print('Using LSTMfused')
             lstm = tf.contrib.rnn.LSTMBlockFusedCell(num_units=self.lstm_units, name=myScope_main + '_lstm')
 
-        convFlat = tf.reshape(slim.flatten(conv3), [self.batch_size, self.trainLength, self.h_size],
+        convFlat = tf.reshape(slim.flatten(conv), [self.batch_size, self.trainLength, self.h_size],
                               name=myScope_main + '_convlution_flattern')
         #
         iter=tf.reshape(self.iter_holder,[self.batch_size,self.trainLength,1])
@@ -185,17 +171,9 @@ class drqn_agent_efficient():
         imageIn = tf.reshape(self.scalarInput, shape=[-1, self.N_station, self.N_station, 5], name=myScope_main + 'in1')
         input_conv = tf.pad(imageIn, [[0, 0], [2, 2], [2, 2], [0, 0]], "REFLECT",
                             name=myScope_main + 'in2')  # reflect padding!
-        conv2 =tf.nn.leaky_relu(tf.layers.conv2d( \
-            inputs=input_conv, filters=16, \
-            kernel_size=[5, 5], strides=[2, 2], activation=None,reuse=None,padding='VALID', \
-            name=myScope_main + '_net_conv2'))
-        #bn = tf.layers.batch_normalization(conv2, training=self.training_phase,trainable=True)
-        conv3 = tf.nn.leaky_relu(tf.layers.conv2d( \
-            inputs=conv2, filters=32, \
-            kernel_size=[3, 3], strides=[1, 1], activation=None,reuse=None,padding='VALID', \
-            name=myScope_main + '_net_conv3'))
-        #bn = tf.layers.batch_normalization(conv3, training=self.training_phase,trainable=True)
 
+        conv=tf_conv_net.build_convolution(myScope_main,input_conv,config.NET_CONFIG['case'])
+        #bn = tf.layers.batch_normalization(conv3, training=self.training_phase,trainable=True)
         if self.use_gpu:
             print('Using CudnnLSTM')
             lstm = tf.contrib.cudnn_rnn.CudnnLSTM(num_layers=1, num_units=self.lstm_units, name=myScope_main + '_lstm')
@@ -204,7 +182,7 @@ class drqn_agent_efficient():
             print('Using LSTMfused')
             lstm = tf.contrib.rnn.LSTMBlockFusedCell(num_units=self.lstm_units, name=myScope_main + '_lstm')
 
-        convFlat = tf.reshape(slim.flatten(conv3), [self.batch_size, self.trainLength, self.h_size],
+        convFlat = tf.reshape(slim.flatten(conv), [self.batch_size, self.trainLength, self.h_size],
                               name=myScope_main + '_convlution_flattern')
 
         iter=tf.reshape(self.iter_holder,[self.batch_size,self.trainLength,1])

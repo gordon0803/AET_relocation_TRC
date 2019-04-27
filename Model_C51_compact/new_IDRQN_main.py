@@ -19,8 +19,6 @@ if use_gpu == 0:
 config1 = tf.ConfigProto()
 config1.gpu_options.allow_growth = True
 
-reward_out = open('log/IDRQN_reward_log_' + datetime.now().strftime('%Y-%m-%d %H-%M-%S') + '.csv', 'w+')
-
 #set rng seed
 np.random.seed(config.TRAIN_CONFIG['random_seed'])
 
