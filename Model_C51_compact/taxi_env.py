@@ -9,6 +9,7 @@ import taxi_util as util
 from collections import deque
 import math
 from sklearn.preprocessing import normalize
+import config
 
 
 class taxi_agent():
@@ -72,12 +73,17 @@ class taxi_simulator():
         self.taxi_in_q = [deque([])  for i in range(self.N)]  # taxis waiting in the queue of each station
         self.taxi_in_charge = [deque([])  for i in range(self.N)]  # taxis charging at each station
         # self.gamma_pool=np.random.gamma(10,size=500000).tolist() #maintain a pool of gamma variable of size 50000
-        self.gamma_pool=(5*np.ones(500000)).tolist()
+        self.gamma_pool=(config.SIMULATION_CONFIG['wait_max']*np.ones(500000)).tolist()
 
         self.served_passengers = np.zeros(self.N)
         self.served_passengers_waiting_time = np.zeros(self.N)
         self.leaved_passengers = np.zeros(self.N)
         self.leaved_passengers_waiting_time = np.zeros(self.N)
+
+        if config.NET_CONFIG['case']=='small':
+            self.max_passenger=50;
+        if config.NET_CONFIG['case']=='large':
+            self.max_passenger=100
 
     # assign the initial list of taxis
     def init_taxi(self):
@@ -106,9 +112,10 @@ class taxi_simulator():
         # Use -1 to denote no relocation
         # check gamma pool
         if len(self.gamma_pool) < 10000:
-            self.gamma_pool = (5*np.ones(500000)).tolist()
+            self.gamma_pool = (config.SIMULATION_CONFIG['wait_max']*np.ones(500000)).tolist()
 
         self.current_action=[-1]*self.N
+        self.clock = self.timer // config.TRAIN_CONFIG['hour_length']  # decide which time interval it falls into
 
         for i in range(len(action)):
             if self.N>action[i] > -1:
@@ -155,7 +162,7 @@ class taxi_simulator():
             for j in range(len(self.taxi_in_charge[i])):
                 if self.taxi_in_charge[i]:
                     taxi = self.taxi_in_charge[i].popleft()
-                    taxi.battery += 0.2 * taxi.max_battery  # every time step, 0.5% of battery get charged
+                    taxi.battery += config.SIMULATION_CONFIG['charge_speed'] * taxi.max_battery  # every time step, 0.5% of battery get charged
                     if taxi.battery >= taxi.max_battery:
                         taxi.battery = taxi.max_battery
                         self.taxi_in_q[i].append(taxi)
@@ -212,7 +219,7 @@ class taxi_simulator():
 
             # new passengers
             n_pass_arrive = self.arrival_rate[i][self.timer]
-            destination = np.random.choice(self.station_list, n_pass_arrive, self.OD_split[i]).tolist()
+            destination = np.random.choice(self.station_list, n_pass_arrive, self.OD_split[self.clock][i]).tolist()
             # add passengers to the queue
             # new passengers with 0 waiting time
             #a different way of getting ride of for loop
@@ -291,7 +298,7 @@ class taxi_simulator():
         self.taxi_in_q = [deque([])  for i in range(self.N)]  # taxis waiting in the queue of each station
         self.taxi_in_charge = [deque([])  for i in range(self.N)]  # taxis charging at each station
         self.init_taxi()
-        self.gamma_pool = (5*np.ones(500000)).tolist()  # maintain a pool of gamma variable of size 50000
+        self.gamma_pool = (config.SIMULATION_CONFIG['wait_max']*np.ones(500000)).tolist()  # maintain a pool of gamma variable of size 50000
         #current action
         self.previous_action=[-1]*self.N #no action made
         self.current_action=[-1]*self.N
@@ -307,7 +314,7 @@ class taxi_simulator():
 
         #pregeneration demand
         self.arrival_rate = []
-        max_time_step = 1000;
+        max_time_step = config.TRAIN_CONFIG['max_epLength'];
         steps = max_time_step // (len(self.arrival_input[0]) - 1)
         x_base = [steps * i for i in range(len(self.arrival_input[0]))]
         x_project = [i for i in range(max_time_step)]
@@ -320,7 +327,6 @@ class taxi_simulator():
     def get_state(self):
         # give the states of the system after all the executions
         # the state of the system is a 3 N by N matrix
-        max_passenger=50;
         state = np.ones([self.N, self.N, 5])
         passenger_gap = np.zeros((self.N, self.N))
         taxi_in_travel = np.zeros((self.N, self.N))
@@ -341,7 +347,7 @@ class taxi_simulator():
 
 
         for i in range(self.N):
-            passenger_gap[i, i] = min(len(self.passenger_qtime[i]),max_passenger)/max_passenger
+            passenger_gap[i, i] = min(len(self.passenger_qtime[i]),self.max_passenger)/self.max_passenger
             awaiting_pass[i]=len(self.passenger_qtime[i])
         #
         for t in self.taxi_in_travel:
@@ -369,7 +375,7 @@ class taxi_simulator():
         # reward
         total_taxi_in_travel = taxi_in_travel.sum()
         total_taxi_in_relocation = taxi_in_relocation.sum()
-        reward = 0.1*(-sum(awaiting_pass)/max_passenger-total_taxi_in_relocation+1)
+        reward = 0.1*(-sum(awaiting_pass)/self.max_passenger-total_taxi_in_relocation+1)
         oldreward=reward*10-1
 
 
@@ -380,12 +386,8 @@ class taxi_simulator():
             feature+=[passenger_gap[i,i],taxi_in_q[i,i],taxi_in_relocation[:,i].sum(),taxi_in_travel[:,i].sum()]
             #update score
             if self.taxi_in_q[i]: #drivers waiting passengers
-                # self.score[i]*=sigmoid(-min(len(self.taxi_in_q[i]),20))
-                # self.score[i]=max(self.score[i],0.1)
                 self.score[i]=1/(awaiting_taxis[i]**0.5)
             else:
-                # self.score[i]*=sigmoid(min(len(self.passenger_qtime[i]),20))
-                # self.score[i]=min(self.score[i],1) #bound to [0,1]
                 self.score[i]=1
 
             score.append(self.score[i])
@@ -396,6 +398,3 @@ def safe_div(x,y):
     if y == 0:
         return 0
     return x / y
-
-def sigmoid(x):
-    return 0.9+0.5/(1+math.exp(-x))

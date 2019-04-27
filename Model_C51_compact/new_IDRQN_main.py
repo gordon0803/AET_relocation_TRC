@@ -6,11 +6,12 @@ use_gpu = 1
 import os
 import config
 import time
-from datetime import datetime
 import tensorflow as tf
 import numpy as np
 import network
 import env_agent
+import demand_gen
+
 np.set_printoptions(precision=2)
 if use_gpu == 0:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -64,14 +65,15 @@ for i in range(main_env.num_episodes):
         while j < main_env.max_epLength:
             tall=time.time()
             j += 1
-            tick=(j//250)/4
+            hour=j//config.TRAIN_CONFIG['hour_length']
+            tick=hour/(config.TRAIN_CONFIG['max_epLength']/config.TRAIN_CONFIG['hour_length'])
 
             if j > 1 + config.TRAIN_CONFIG['frame_skip']:
                 temp_init = main_env.init_state_list[-config.TRAIN_CONFIG['frame_skip']]
                 initial_rnn_cstate = temp_init[0]
                 initial_rnn_hstate = temp_init[1]
 
-            a=main_env.take_action([s],feature,initial_rnn_cstate,initial_rnn_hstate,tick,distance)
+            a=main_env.take_action([s],feature,initial_rnn_cstate,initial_rnn_hstate,tick)
             if config.TRAIN_CONFIG['use_tracker']:
                 main_env.sys_tracker.record(s, a)
             # move to the next step based on action selected
@@ -90,12 +92,12 @@ for i in range(main_env.num_episodes):
 
             #buffer record
             newr=r*np.ones((main_env.N_station))
-            v1=np.reshape(np.array([s, a, newr, s1,feature,score,featurep,main_env.e,(j//250)/4]), [1,9])
+            v1=np.reshape(np.array([s, a, newr, s1,feature,score,featurep,main_env.e,tick]), [1,9])
             main_env.buffer_record(v1)
 
             if i>4: main_env.update_bandit()
 
-            main_env.train_agent(distance)
+            main_env.train_agent()
 
             rAll += r
             rAll_unshape+=r2

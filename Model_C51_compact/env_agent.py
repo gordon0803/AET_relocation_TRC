@@ -77,12 +77,12 @@ class env_agent():
         self.buffer_count=0
 
 
-    def take_action(self,state, feature, initial_c, initial_h, tick,distance):
+    def take_action(self,state, feature, initial_c, initial_h, tick):
         a = [st for st in range(self.N_station)]
 
         # predict_score = sess.run(linear_model.linear_Yh, feed_dict={linear_model.linear_X: [feature]})
         predict_score = self.linucb_agent.return_upper_bound(feature)
-        predict_score = predict_score/distance
+        predict_score = predict_score/self.distance
         valid = predict_score > config.TRAIN_CONFIG['elimination_threshold']
         invalid = predict_score <= config.TRAIN_CONFIG['elimination_threshold']
         rand_num = np.random.rand(1)
@@ -135,7 +135,7 @@ class env_agent():
             self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
             self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
 
-    def train_agent(self,distance):
+    def train_agent(self):
         # use a single buffer
         if self.total_steps > self.pre_train_steps:
             # train linear multi-arm bandit first, we periodically update this (every 10*update_fequency steps)
@@ -151,7 +151,7 @@ class env_agent():
                     current_action = np.vstack(trainBatch[:, 1])
                     tr, t_action = self.agent.train_prepare(trainBatch, station)
                     train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))
-                    train_predict_score/=distance[station,:]
+                    train_predict_score/=self.distance[station,:]
                     target_in = np.vstack(trainBatch[:, 3])
                     train_in = np.vstack(trainBatch[:, 0])
 
