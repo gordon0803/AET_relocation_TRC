@@ -11,8 +11,10 @@ if config.NET_CONFIG['case']=='small':
     l1 = [5 for i in range(N_station)]
     distance = np.zeros((N_station, N_station))
     for i in range(N_station):
+        distance[i,i]=1
         for j in range(N_station):
             distance[i, j] = 2 * math.ceil(abs(j - i) / 2);
+            distance[j,i]=2 * math.ceil(abs(j - i) / 2);
 
     travel_time = distance
 
@@ -44,9 +46,9 @@ if config.NET_CONFIG['case']=='small':
         tempdist.append(exp_dist)
         tempOD.append(OD_mat)
     exp_dist=np.array(tempdist)
-    OD_mat=np.array(tempOD)
+    OD_mat=tempOD
 
-    taxi_input = 10
+    taxi_input = 6
 
     simulation_input['N_station'] = N_station;
     simulation_input['distance'] = distance

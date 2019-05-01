@@ -28,7 +28,7 @@ class env_agent():
         # Set the rate of random action decrease.
         self.e = self.startE
         self.bandit_swap_e=self.e
-        self.stepDrop = (self.endE) ** (1 / self.anneling_steps)
+        self.stepDrop = (self.startE-self.endE)/self.anneling_steps
 
         # create lists to contain total rewards and steps per episode
         self.jList = []
@@ -60,7 +60,6 @@ class env_agent():
 
         self.agent.drqn_build()
 
-
     def initialize_episode(self):
         #buffer to be used within each episode
         self.global_epi_buffer=[]
@@ -69,15 +68,39 @@ class env_agent():
         self.env.reset() #taxi system reset
         self.init_state_list=[]
         if self.bandit_swap_e - self.e >.05:  # we do swapping when $e$ got declined by 0.05 percent.
+            newb=bandit.linucb_agent(self.N_station,self.N_station*4)
+            for st in range(self.N_station):
+                newb.Aa[st]=0.1*np.identity(self.N_station*4)+self.linucb_agent_backup.Aa[st]
+                newb.ba[st]=self.linucb_agent_backup.ba[st]
             self.linucb_agent=self.linucb_agent_backup
-            self.linucb_agent_backup=bandit.linucb_agent(self.N_station, self.N_station * 4)
+            self.linucb_agent_backup=newb
             self.bandit_swap_e=self.e
             print('we swap bandit here')
 
         self.buffer_count=0
 
 
-    def take_action(self,state, feature, initial_c, initial_h, tick):
+    def measure_rnn(self,state,j,tick):
+        if j > 1 + config.TRAIN_CONFIG['frame_skip']:
+            temp_init = self.init_state_list[-config.TRAIN_CONFIG['frame_skip']]
+            initial_rnn_cstate = temp_init[0]
+            initial_rnn_hstate = temp_init[1]
+        else:
+            initial_rnn_cstate = np.zeros((1, 1, config.TRAIN_CONFIG['lstm_unit']))
+            initial_rnn_hstate = np.zeros((1, 1, config.TRAIN_CONFIG['lstm_unit']))
+        rnn_value, initial_rnn_state = self.sess.run([self.agent.main_rnn_value, self.agent.rnn_out_state],
+                                                         feed_dict={self.agent.training_phase: 0,
+                                                                    self.agent.scalarInput: state,
+                                                                    self.agent.rnn_cstate_holder: initial_rnn_cstate,
+                                                                    self.agent.rnn_hstate_holder: initial_rnn_hstate,
+                                                                    self.agent.iter_holder: [np.array([tick])],
+                                                                    self.agent.eps_holder: [np.array([self.e])],
+                                                                    self.agent.trainLength: 1,
+                                                                    self.agent.batch_size: 1})
+        return rnn_value,initial_rnn_state
+
+
+    def take_action(self,state,feature,j,tick):
         a = [st for st in range(self.N_station)]
 
         # predict_score = sess.run(linear_model.linear_Yh, feed_dict={linear_model.linear_X: [feature]})
@@ -85,20 +108,14 @@ class env_agent():
         predict_score = predict_score/self.distance
         valid = predict_score > config.TRAIN_CONFIG['elimination_threshold']
         invalid = predict_score <= config.TRAIN_CONFIG['elimination_threshold']
-        rand_num = np.random.rand(1)
+        rnn_value,initial_rnn_state=self.measure_rnn(state,j,tick)
+        self.init_state_list.append(initial_rnn_state)
 
-        rnn_value, initial_rnn_state = self.sess.run([self.agent.main_rnn_value, self.agent.rnn_out_state],
-                                                feed_dict={self.agent.training_phase: 0,
-                                                           self.agent.scalarInput: state,
-                                                           self.agent.rnn_cstate_holder: initial_c,
-                                                           self.agent.rnn_hstate_holder: initial_h,
-                                                           self.agent.iter_holder: [np.array([tick])],
-                                                           self.agent.eps_holder: [np.array([self.e])],
-                                                           self.agent.trainLength: 1, self.agent.batch_size: 1})
 
         self.init_state_list.append(initial_rnn_state) #record rnn state
         for station in range(self.N_station):
             if self.env.taxi_in_q[station]:
+                rand_num = np.random.rand(1)
                 a1 = self.agent.predict(rnn_value, predict_score[station,:].copy(), self.e, station, rand_num,
                                    valid[station,:], invalid[station,:])
                 a[station] = a1  # action performed by DRQN
@@ -122,58 +139,64 @@ class env_agent():
 
     def epsilon_decay(self):
         self.total_steps += 1
-
         if self.total_steps > self.pre_train_steps:
             # start training here
             if self.e > self.endE:
-                self.e *= self.stepDrop
+                self.e -= self.stepDrop
 
     def update_bandit(self):
         #update bandit every 500 steps
-        if self.total_steps%(500)==0:
-            linubc_train = self.bandit_buffer.sample(self.batch_size * 40)
-            self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
-            self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+        if self.total_steps%(30)==0:
+            linubc_train = self.bandit_buffer.sample(self.batch_size * 2)
+            if self.total_steps<=2*self.pre_train_steps:
+                self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+                self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+            else:
+                self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
 
     def train_agent(self):
         # use a single buffer
         if self.total_steps > self.pre_train_steps:
             # train linear multi-arm bandit first, we periodically update this (every 10*update_fequency steps)
             if self.total_steps % (self.update_freq) == 0:
+                self.total_train_iter+=1
                 #update target network
                 self.agent.update_target_net()
-
                 for station in range(self.N_station):
                     # visual and normalization
                     trainBatch = self.exp_replay.sample(self.batch_size, self.trace_length)
+
+                    #very important: convert the structure of the batch
+                    trainBatch=self.convert_batch_time(trainBatch,self.batch_size,self.trace_length)
+                    #very important
                     past_train_eps = np.vstack(trainBatch[:, 7])
                     past_train_iter = np.vstack(trainBatch[:, 8])
-                    current_action = np.vstack(trainBatch[:, 1])
                     tr, t_action = self.agent.train_prepare(trainBatch, station)
-                    train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))
-                    train_predict_score/=self.distance[station,:]
+                    tr[t_action==self.N_station]=0 #no reward for those actions
                     target_in = np.vstack(trainBatch[:, 3])
                     train_in = np.vstack(trainBatch[:, 0])
-
+                    train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))/self.distance[station,:]
                     tp = train_predict_score.copy()
-                    af = tp < self.e_threshold
-                    bf = tp >= self.e_threshold
-                    tp[af] = 1e4
-                    tp[bf] = 0
+                    invalid = tp <= self.e_threshold
+                    valid = tp > self.e_threshold
+                    tp[invalid] = 1e4
+                    tp[valid] = 0
+                    tp[:,station]=0
                     tp_new = 1e4 * np.ones((self.batch_size * self.trace_length, self.N_station + 1))
                     tp_new[:, :-1] = tp
                     tp = tp_new
+                    station_in=[station]*self.batch_size*self.trace_length
                     tz = self.sess.run(self.agent.targetZ[station],
                                   feed_dict={self.agent.training_phase: 0, self.agent.scalarInput: target_in,
                                              self.agent.iter_holder: past_train_iter, self.agent.eps_holder: past_train_eps,
                                              self.agent.predict_score[station]: tp, self.agent.rewards[station]: tr,
-                                             self.agent.trainLength: self.trace_length, self.agent.batch_size: self.batch_size})
+                                             self.agent.trainLength: self.trace_length, self.agent.batch_size:self.batch_size,self.agent.station_id:station_in})
 
                     self.sess.run(self.agent.updateModel[station],
                              feed_dict={self.agent.training_phase: 1, self.agent.targetQ[station]: tz, self.agent.rewards[station]: tr,
                                         self.agent.actions[station]: t_action, self.agent.scalarInput: train_in,
                                         self.agent.iter_holder: past_train_iter, self.agent.eps_holder: past_train_eps,
-                                        self.agent.trainLength: self.trace_length, self.agent.batch_size: self.batch_size})
+                                        self.agent.trainLength: self.trace_length, self.agent.batch_size: self.batch_size,self.agent.station_id:station_in})
                     # print('training loss is:....',loss)
 
 
@@ -191,6 +214,13 @@ class env_agent():
             record[0][5]=score; #replay the score
             self.bandit_buffer.add(record)
 
+    def convert_batch_time(self,batch, batch_size, trace_length):
+        # batch is original in time x batch format, now we convert it into batch x time format
+        new_batch = []
+        for i in range(trace_length):
+            for j in range(batch_size):
+                new_batch.append(batch[j * trace_length + i])
+        return (np.array(new_batch))
 
     def load_params(self):
         with open('simulation_input.dat', 'rb') as fp:
@@ -219,7 +249,7 @@ class env_agent():
             self. path = "./small_network_save_model"  # The path to save our model to.
             self.h_size = config.TRAIN_CONFIG['h_size']
             self. max_epLength = config.TRAIN_CONFIG['max_epLength']
-            self.pre_train_steps =self. max_epLength * 10  # How many steps of random actions before training begins.
+            self.pre_train_steps =self. max_epLength * 1  # How many steps of random actions before training begins.
             self.softmax_action = config.TRAIN_CONFIG['softmax_action']
             self.silent = config.TRAIN_CONFIG['silent']  # do not print training time
             self.prioritized = config.TRAIN_CONFIG['prioritized']

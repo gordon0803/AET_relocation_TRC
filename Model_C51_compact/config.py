@@ -2,31 +2,32 @@
 
 
 NET_CONFIG={
-    'case':'large', #large of small scenario experiments
+    'case':'small', #large of small scenario experiments
     'Risk_Distort':1, #change the shape of risk or not
-    'eta': 0.8 #how to alter the reward function
+    'eta': 0.3#how to alter the reward function
 }
 
 
 if NET_CONFIG['case']=='small':
     TRAIN_CONFIG = {
-        'batch_size':32,
-        'trace_length': 10,
-        'update_freq':30,
+        'batch_size':64,
+        'trace_length': 8,
+        'update_freq':50,
         'lstm_unit':256,
-        'y': .99,
+        'y': .9,
         'elimination_threshold':0.1,
         'trip_threshold':0.1,
         'startE':1,
         'endE':0.05,
-        'anneling_steps':250*1000,
-        'num_episodes':300,
+        'learning_rate_opt':0.0005,
+        'anneling_steps':200*1000,
+        'num_episodes':400,
         'buffer_size':5000,
         'prioritized':0,
         'load_model':False,
         'warmup_time':-1,
         'model_path':'./small_network_drqn',
-        'h_size':288, #The size of the final convolutional layer before splitting it into Advantage and Value streams.
+        'h_size':576, #The size of the final convolutional layer before splitting it into Advantage and Value streams.
         'frame_skip':2, #frame skipping for lstm buffer
         'max_epLength':1000, #The max allowed length of our episode.
         'pre_train_steps':20000, #How many steps of random actions before traning begins
@@ -46,16 +47,17 @@ if NET_CONFIG['case']=='small':
 if NET_CONFIG['case']=='large':
     TRAIN_CONFIG = {
         'batch_size': 32,
-        'trace_length': 10,
-        'update_freq': 200,
+        'trace_length': 4,
+        'update_freq': 50,
         'lstm_unit': 512,
-        'y': .99,
-        'elimination_threshold': .3,
-        'frame_skip': 4,
+        'y': .9,
+        'elimination_threshold': -0.1,
+        'frame_skip': 3,
         'trip_threshold': 0.3,
         'startE': 1,
         'endE': 0.05,
-        'anneling_steps': 250 * 3840,
+        'learning_rate_opt':0.001,
+        'anneling_steps': 200 * 1200,
         'num_episodes': 300,
         'buffer_size': 5000,
         'prioritized': 0,
@@ -64,7 +66,7 @@ if NET_CONFIG['case']=='large':
         'model_path': './large_network_drqn',
         'hour_length': 120,
         'h_size': 1024,
-        'max_epLength': 3840,  # The max allowed length of our episode.
+        'max_epLength': 1200,  # The max allowed length of our episode.
         'pre_train_steps': 20000,  # How many steps of random actions before traning begins
         'softmax_action': False,  # use softmax or not
         'silent': 1,  # 0 for print, 1 for no print

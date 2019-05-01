@@ -13,9 +13,7 @@ import config
 import pickle
 from system_tracker import system_tracker
 
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# session = tf.Session(config=config)
+import demand_gen
 
 greedy_option = "inventory"
 #------------------Parameter setting-----------------------
@@ -48,7 +46,7 @@ pre_train_steps = max_epLength*50 #How many steps of random actions before train
 softmax_action=config.TRAIN_CONFIG['softmax_action']
 rng_seed=config.TRAIN_CONFIG['random_seed']
 
-reward_out=open('log/reward_log_'+greedy_option+'_'+str(rng_seed)+'.csv', 'w')  #Replace the old log
+#reward_out=open('log/reward_log_'+greedy_option+'_'+str(rng_seed)+'.csv', 'w')  #Replace the old log
 
 #set rng seed
 np.random.seed(rng_seed)
@@ -154,9 +152,6 @@ for i in range(num_episodes):
     rList.append(rAll)  # reward in this episode
     sys_tracker.record_time(env)
     print('Episode:', i, ', totalreward:', rAll, ', total serve:', total_serve, ', total leave:', total_leave, ', terminal_taxi_distribution:', [len(v) for v in env.taxi_in_q], ', terminal_passenger:',[len(v) for v in env.passenger_qtime])
-
-    reward_out.write(str(j)+','+str(rAll)+'\n')
-reward_out.close()
 
 sys_tracker.save(greedy_option+'_'+str(rng_seed))
 sys_tracker.playback(-1)
