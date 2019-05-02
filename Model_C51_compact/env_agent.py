@@ -148,16 +148,19 @@ class env_agent():
         regret,switch=self.linucb_agent.return_regret(linubc_train[:,4],linubc_train[:,5])
 
         #check if we need to switch bandit by end of each round
-        if regret>self.regret:
-            self.regret=regret #keep recording the lowest regret
             #self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4) #initialize and discard previous bandit
-            if switch: #5% error occured:
-                self.regret=1e4 #reset regret threshold
+        if switch: #5% error occured:
+                self.regret=0#reset regret threshold
                 self.linucb_agent=self.linucb_agent_backup
                 self.linucb_agent_backup=bandit.linucb_agent(self.N_station,self.N_station*4)
                 print('we swap bandit here')
-            else:
-                self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4)
+
+        if regret>self.regret and self.total_steps>self.pre_train_steps:
+            self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4)
+            print('new bandit')
+            self.regret=regret #keep recording the lowest regret
+
+
 
         return regret
 
