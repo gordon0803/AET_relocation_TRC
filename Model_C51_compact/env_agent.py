@@ -21,6 +21,8 @@ class env_agent():
         self.sys_tracker.initialize(config, self.distance, self.travel_time, self.arrival_rate, int(self.taxi_input), self.N_station, self.num_episodes,
                                self.max_epLength)
         self.tau=0.05 #frequency for target net update
+
+        self.regret=0
         # process a new distance to avoid non zeros divison
         for i in range(self.N_station):
             self.distance[i, i] = 1
@@ -42,8 +44,8 @@ class env_agent():
             os.makedirs(self.path)
 
         self.linucb_agent = bandit.linucb_agent(self.N_station, self.N_station * 4)
-        self.exp_replay = network.experience_buffer(5000)  # a single buffer holds everything
-        self.bandit_buffer = network.bandit_buffer(5000)
+        self.exp_replay = network.experience_buffer(3000)  # a single buffer holds everything
+        self.bandit_buffer = network.bandit_buffer(1000)
         self.bandit_swap_e = 1;
         self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4)
         print('System Successfully Initialized!')
@@ -67,16 +69,6 @@ class env_agent():
         self.sys_tracker.new_episode() #tracker new episode
         self.env.reset() #taxi system reset
         self.init_state_list=[]
-        if self.bandit_swap_e - self.e >.05:  # we do swapping when $e$ got declined by 0.05 percent.
-            newb=bandit.linucb_agent(self.N_station,self.N_station*4)
-            for st in range(self.N_station):
-                newb.Aa[st]=0.1*np.identity(self.N_station*4)+self.linucb_agent_backup.Aa[st]
-                newb.ba[st]=self.linucb_agent_backup.ba[st]
-            self.linucb_agent=self.linucb_agent_backup
-            self.linucb_agent_backup=newb
-            self.bandit_swap_e=self.e
-            print('we swap bandit here')
-
         self.buffer_count=0
 
 
@@ -105,13 +97,10 @@ class env_agent():
 
         # predict_score = sess.run(linear_model.linear_Yh, feed_dict={linear_model.linear_X: [feature]})
         predict_score = self.linucb_agent.return_upper_bound(feature)
-        predict_score = predict_score/self.distance
-        valid = predict_score > config.TRAIN_CONFIG['elimination_threshold']
-        invalid = predict_score <= config.TRAIN_CONFIG['elimination_threshold']
+        predict_score = predict_score*self.distance
+        valid = predict_score < config.TRAIN_CONFIG['elimination_threshold']
+        invalid = predict_score >= config.TRAIN_CONFIG['elimination_threshold']
         rnn_value,initial_rnn_state=self.measure_rnn(state,j,tick)
-        self.init_state_list.append(initial_rnn_state)
-
-
         self.init_state_list.append(initial_rnn_state) #record rnn state
         for station in range(self.N_station):
             if self.env.taxi_in_q[station]:
@@ -146,13 +135,31 @@ class env_agent():
 
     def update_bandit(self):
         #update bandit every 500 steps
-        if self.total_steps%(30)==0:
-            linubc_train = self.bandit_buffer.sample(self.batch_size * 2)
-            if self.total_steps<=2*self.pre_train_steps:
-                self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
-                self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+        if self.total_steps%(self.update_freq)==0:
+            linubc_train = self.bandit_buffer.sample(self.batch_size)
+            self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+            self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+
+
+
+    def bandit_regret(self):
+        linubc_train=self.bandit_buffer.sample(self.batch_size*50)
+        #check the regret
+        regret,switch=self.linucb_agent.return_regret(linubc_train[:,4],linubc_train[:,5])
+
+        #check if we need to switch bandit by end of each round
+        if regret>self.regret:
+            self.regret=regret #keep recording the lowest regret
+            #self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4) #initialize and discard previous bandit
+            if switch: #5% error occured:
+                self.regret=1e4 #reset regret threshold
+                self.linucb_agent=self.linucb_agent_backup
+                self.linucb_agent_backup=bandit.linucb_agent(self.N_station,self.N_station*4)
+                print('we swap bandit here')
             else:
-                self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+                self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4)
+
+        return regret
 
     def train_agent(self):
         # use a single buffer
@@ -175,10 +182,10 @@ class env_agent():
                     tr[t_action==self.N_station]=0 #no reward for those actions
                     target_in = np.vstack(trainBatch[:, 3])
                     train_in = np.vstack(trainBatch[:, 0])
-                    train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))/self.distance[station,:]
+                    train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))*self.distance[station,:]
                     tp = train_predict_score.copy()
-                    invalid = tp <= self.e_threshold
-                    valid = tp > self.e_threshold
+                    invalid = tp >= self.e_threshold
+                    valid = tp < self.e_threshold
                     tp[invalid] = 1e4
                     tp[valid] = 0
                     tp[:,station]=0
@@ -200,19 +207,20 @@ class env_agent():
                     # print('training loss is:....',loss)
 
 
-    def process_bandit_buffer(self):
-        future_steps=self.trace_length
-        tmask = np.linspace(0, 1, num=future_steps + 1)
-        quantile_mask=tmask
-        #pdeta=0.5;
-        #quantile_mask=scipy.stats.norm.cdf(scipy.stats.norm.ppf(tmask)-pdeta)
-        quantile_mask = np.diff(quantile_mask) # rescale the distribution to favor risk neutral or risk-averse behavior
-
-        for epi in range(len(self.global_bandit_buffer)-future_steps-1):
-            score=np.array([self.global_bandit_buffer[epi+k][0][5] for k in range(future_steps)]).T.dot(quantile_mask)
-            record=self.global_bandit_buffer[epi]
-            record[0][5]=score; #replay the score
-            self.bandit_buffer.add(record)
+    def process_bandit_buffer(self,steps):
+        future_steps = self.trace_length
+        if len(self.global_bandit_buffer)>steps+future_steps+1:
+            tmask = np.linspace(0, 1, num=future_steps + 1)
+            quantile_mask=tmask
+            #pdeta=0.5;
+            #quantile_mask=scipy.stats.norm.cdf(scipy.stats.norm.ppf(tmask)-pdeta)
+            quantile_mask = np.diff(quantile_mask) # rescale the distribution to favor risk neutral or risk-averse behavior
+            for epi in range(steps):
+                score=np.array([self.global_bandit_buffer[epi+k][0][5] for k in range(future_steps)]).T.dot(quantile_mask)
+                record=self.global_bandit_buffer[epi]
+                record[0][5]=score; #replay the score
+                self.bandit_buffer.add(record)
+            self.global_bandit_buffer=self.global_bandit_buffer[steps:]
 
     def convert_batch_time(self,batch, batch_size, trace_length):
         # batch is original in time x batch format, now we convert it into batch x time format

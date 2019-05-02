@@ -386,9 +386,9 @@ class taxi_simulator():
             feature+=[passenger_gap[i,i],taxi_in_q[i,i],taxi_in_relocation[:,i].sum(),taxi_in_travel[:,i].sum()]
             #update score
             if self.taxi_in_q[i]: #drivers waiting passengers
-                self.score[i]=0
+                self.score[i]=1
             else:
-                self.score[i]=len(self.passenger_qtime[i])
+                self.score[i]=0
 
             score.append(self.score[i])
 

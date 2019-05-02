@@ -140,12 +140,11 @@ class drqn_agent_efficient():
         streamA2, streamV2 = tf.split(self.rnn_holder, 2, 1, name=myScope_main + '_split_streamAV')
         #Vg, Vl = tf.split(streamV, 2, 1, name=myScope_main + '_split_streamVgl_train')
         #Vg2, Vl2 = tf.split(streamV2, 2, 1, name=myScope_main + '_split_streamVgl_predict')
-        Value = tf.layers.dense(streamV, 1, name=myScope_main + 'VW', activation='linear', reuse=None)  # advantage
-        Value2 = tf.layers.dense(streamV2, 1, name=myScope_main + 'VW', activation='linear',
-                                 reuse=True)  # advantage
 
 
 
+        V_list=[]
+        A_list=[]
         for i in range(self.N_station):
             myScope = 'DRQN_main_' + str(i)
             #localValue = tf.layers.dense(Vl, 1, name=myScope + 'VW', activation='linear', reuse=None)  # advantage
@@ -153,24 +152,41 @@ class drqn_agent_efficient():
              #                        reuse=True)  # advantage
             streamA_local=tf.concat([streamA,tf.one_hot(self.station_id,self.N_station,dtype=tf.float32)],-1)
             streamA2_local=tf.concat([streamA2,tf.one_hot(self.station_id,self.N_station,dtype=tf.float32)],-1)
+            streamV_local=tf.concat([streamV, tf.one_hot(self.station_id, self.N_station, dtype=tf.float32)], -1)
+            streamV2_local=tf.concat([streamV2, tf.one_hot(self.station_id, self.N_station, dtype=tf.float32)], -1)
             if i==0:
                 localA = tf.layers.dense(streamA_local, (self.N_station + 1) * self.N, name=myScope_main + 'AW', activation='linear', reuse=None)  # advantage
+                Value = tf.layers.dense(streamV_local, 1, name=myScope_main + 'VW', activation='linear',
+                                        reuse=None)  # advantage
+                Value2 = tf.layers.dense(streamV2_local, 1, name=myScope_main + 'VW', activation='linear',
+                                         reuse=True)  # advantage
             else:
                 localA = tf.layers.dense(streamA_local, (self.N_station + 1) * self.N, name=myScope_main + 'AW',
                                          activation='linear', reuse=True)  # advantage
+                Value = tf.layers.dense(streamV_local, 1, name=myScope_main + 'VW', activation='linear',
+                                        reuse=True)  # advantage
+                Value2 = tf.layers.dense(streamV2_local, 1, name=myScope_main + 'VW', activation='linear',
+                                         reuse=True)  # advantage
+
+
             localA2 = tf.layers.dense(streamA2_local, (self.N_station + 1) * self.N, name=myScope_main + 'AW', activation='linear',reuse=True)  # advantage
+
+            # localA=tf.reshape(localA,[-1,self.N_station+1,self.N])
+            # Value = tf.reshape(tf.tile(Value, [1, self.N_station + 1]),
+            #                    [self.batch_size * self.trainLength, self.N_station + 1, self.N])
+            V_list.append(Value)
+            A_list.append(localA)
+            # localA2 = tf.reshape(localA2, [-1, self.N_station + 1, self.N])
+
+            # Value2 = tf.reshape(tf.tile(Value2, [1, self.N_station + 1]),
+            #                    [self.batch_size * self.trainLength, self.N_station + 1, self.N])
 
             Qt2 = Value2 + tf.subtract(localA2, tf.reduce_mean(localA2, axis=1, keepdims=True),
                                        name=myScope + '_unshaped_Qout')
-            Qout2 = tf.reshape(Qt2, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
-            self.Qout2.append(Qout2)
-            #
-            Qt =Value+tf.subtract(localA, tf.reduce_mean(localA, axis=1, keepdims=True),
-                                     name=myScope + '_unshaped_Qout')
-            Qout = tf.reshape(Qt, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
-            self.mainQout.append(Qout)
 
+            Qout2 = tf.reshape(Qt2, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
             q = tf.reduce_mean(tf.sort(Qout2, axis=-1) * self.quantile_mask, axis=-1)
+
             station_vec = tf.concat([tf.ones(i),tf.ones(1),tf.ones(self.N_station-i)], axis=0)
             station_score = tf.multiply(self.predict_score[i], station_vec)  # mark self as 0
             self.station_score.append(station_score)
@@ -178,6 +194,18 @@ class drqn_agent_efficient():
             # predict = tf.argmax(tf.subtract(tf.reduce_sum(mean,tf.scalar_mul(self.conf,std)),self.station_score[i]), 1, name=myScope + '_prediction')
             predict = tf.argmax(tf.subtract(q, self.station_score[i]), 1, name=myScope + '_prediction')
             self.mainPredict.append(predict)
+
+        sumV=tf.reduce_sum(V_list,axis=0) #sum of valeus
+        for i in range(self.N_station):
+            myScope = 'DRQN_main_' + str(i)
+            Qt =sumV+tf.subtract(A_list[i], tf.reduce_mean(A_list[i], axis=1, keepdims=True),
+                                     name=myScope + '_unshaped_Qout')
+            Qout = tf.reshape(Qt, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
+            self.mainQout.append(Qout)
+
+
+
+
 
 
     def build_target(self):
@@ -206,29 +234,44 @@ class drqn_agent_efficient():
         rnn, rnn_state = lstm(inputs=convFlat,training=True)
         rnn = tf.reshape(rnn, shape=[-1, self.lstm_units], name=myScope_main + '_reshapeRNN_out')
         streamA, streamV = tf.split(rnn, 2, 1, name=myScope_main + '_split_streamAV')
-        Value = tf.layers.dense(streamV, 1, name=myScope_main + 'VW', activation='linear', reuse=None)  # advantage
+
         #streamVg, streamVl = tf.split(streamV, 2, 1, name=myScope_main + '_split_streamVlg') #local and global V
         #every body shares the same scope
 
 
         #shared value function!
+        A_list=[]
+        V_list=[]
         for i in range(self.N_station):
-            myScope = 'DRQN_target_' + str(i)
           #  localValue = tf.layers.dense(streamVl, 1, name=myScope + 'VW', activation='linear',reuse=None)  # advantage
             streamA_local=tf.concat([streamA,tf.one_hot(self.station_id,self.N_station,dtype=tf.float32)],-1)
+            streamV_local=tf.concat([streamV,tf.one_hot(self.station_id,self.N_station,dtype=tf.float32)],-1)
             if i==0:
                 localAdvantage = tf.layers.dense(streamA_local, (self.N_station+1) * self.N, name=myScope_main + 'AW',activation='linear',reuse=None)  # advantage
+                Value = tf.layers.dense(streamV_local, 1, name=myScope_main + 'VW', activation='linear',
+                                        reuse=None)  # advantage
             else:
                 localAdvantage = tf.layers.dense(streamA_local, (self.N_station + 1) * self.N, name=myScope_main + 'AW',
                                                  activation='linear', reuse=True)  # advantage
-            Qt =Value+tf.subtract(localAdvantage, tf.reduce_mean(localAdvantage, axis=1, keepdims=True),
+                Value = tf.layers.dense(streamV_local, 1, name=myScope_main + 'VW', activation='linear',
+                                        reuse=True)  # advantage
+            #
+            # Value = tf.reshape(tf.tile(Value, [1, self.N_station + 1]),[self.batch_size * self.trainLength, self.N_station + 1, self.N])
+            # localAdvantage = tf.reshape(localAdvantage, [-1, self.N_station + 1, self.N])
+            A_list.append(localAdvantage)
+            V_list.append(Value)
+
+        sumV=tf.reduce_sum(V_list,axis=0)
+        for i in range(self.N_station):
+            myScope = 'DRQN_target_' + str(i)
+            Qt =sumV+tf.subtract(A_list[i], tf.reduce_mean(A_list[i], axis=1, keepdims=True),
                                      name=myScope + '_unshaped_Qout')
             Qout = tf.reshape(Qt, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
             self.targetQout.append(Qout)
 
 
     def build_train(self):
-        self.trainer = tf.train.AdamOptimizer(learning_rate=config.TRAIN_CONFIG['learning_rate_opt'], name='Adam_opt')
+        self.trainer = tf.train.RMSPropOptimizer(learning_rate=config.TRAIN_CONFIG['learning_rate_opt'], name='Adam_opt')
         lossmask1 = tf.zeros([self.train_length//2,self.batch_size])
         lossmask2 = tf.ones([self.train_length//2, self.batch_size])
         lossmask=tf.concat([lossmask1,lossmask2],0)
@@ -299,7 +342,7 @@ class drqn_agent_efficient():
             predict_score[valid]=0;
 
             predict_score=np.append(predict_score,1e4)
-            Q= self.sess.run(self.mainPredict[station], feed_dict={self.rnn_holder: rnn[0][0], self.predict_score[station]:[predict_score],self.station_id:[station]})
+            Q= self.sess.run(self.mainPredict[station], feed_dict={self.rnn_holder: rnn[0][0], self.predict_score[station]:[predict_score],self.station_id:[station],self.batch_size:1,self.trainLength:1})
             action=Q[-1]
 
         return action

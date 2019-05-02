@@ -2,7 +2,7 @@ import numpy as np
 import time
 import scipy
 import numba as nb
-
+import config
 
 # @nb.jit
 # def _return_upper_bound_batch(features,theta,alpha,AaI,n_action):
@@ -83,7 +83,7 @@ class linucb_agent():
 
 
         # self.alpha=0.01
-        #self.alpha=np.sqrt(0.5*np.log(2*self.round*self.n_action*10))
+        self.alpha=0.5*np.sqrt(self.d*np.log(1+self.round*100))+np.sqrt(0.1)
         # self.alpha=0.01
         #print(self.alpha,self.round)
 
@@ -99,7 +99,7 @@ class linucb_agent():
         s=feature
         # prob=[np.dot(s,self.theta[i])+self.alpha*np.sqrt(np.dot(np.dot(s,self.AaI[i]),s)) for i in range(self.n_action)]
 
-        prob=np.fromiter((np.dot(s,self.theta[i])+self.alpha*np.sqrt(np.dot(np.dot(s,self.AaI[i]),s)) for i in range(self.n_action)), float)
+        prob=np.fromiter((np.dot(s,self.theta[i])-self.alpha*np.sqrt(np.dot(np.dot(s,self.AaI[i]),s)) for i in range(self.n_action)), float)
 
 
         # prob=_return_upper_bound(s,self.theta,self.alpha,self.AaI,self.n_action)
@@ -109,7 +109,7 @@ class linucb_agent():
     def return_upper_bound_batch(self,feature):
         feature=np.vstack(feature)
         # prob=np.array([np.einsum('ij,j->i',feature,self.theta[i])+self.alpha*np.sqrt(np.einsum('ij,jj,ij->i',feature,self.AaI[i],feature)) for i in range(self.n_action)]).T
-        prob = np.array([np.einsum('ij,j->i', feature, self.theta[i]) + self.alpha * np.sqrt(np.einsum('ij,jj,ij->i', feature, self.AaI[i], feature)) for i in range(self.n_action)]).T
+        prob = np.array([np.einsum('ij,j->i', feature, self.theta[i]) - self.alpha * np.sqrt(np.einsum('ij,jj,ij->i', feature, self.AaI[i], feature)) for i in range(self.n_action)]).T
 
 
         # prob=[self.return_upper_bound(feature[i]) for i in range(len(feature))]
@@ -117,6 +117,29 @@ class linucb_agent():
 
 
         return np.array(prob)
+
+    def measure_error(self,feature,score):
+        feature=np.vstack(feature)
+        score=np.vstack(score)
+        mean=np.array([np.einsum('ij,j->i', feature, self.theta[i]) for i in range(self.n_action)]).T
+        bound=np.array([self.alpha * np.sqrt(np.einsum('ij,jj,ij->i', feature, self.AaI[i], feature)) for i in range(self.n_action)]).T
+        count1=(mean-(bound+1*scipy.special.erfinv(-0.9)))<config.TRAIN_CONFIG['elimination_threshold'] #eliminated items
+        count2=score<config.TRAIN_CONFIG['elimination_threshold'] #eliminated items
+        count=np.absolute(count1.astype(np.float32)*count2.astype(np.float32)-count2.astype(np.float32)) #error in count
+        err_total=count.sum()
+        err=err_total/(self.n_action*len(score))
+        return err
+
+
+    def return_regret(self,feature,score):
+        err=self.measure_error(feature,score)
+        if err>.05+np.sqrt(np.log(10)/(2*len(score)*self.n_action)):
+            switch=1
+        else:
+            switch=0
+
+        return err,switch
+
 
 
 

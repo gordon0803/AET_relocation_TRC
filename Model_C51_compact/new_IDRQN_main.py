@@ -101,7 +101,7 @@ for i in range(main_env.num_episodes):
             v1=np.reshape(np.array([s, a, newr, s1,feature,score,featurep,main_env.e,tick]), [1,9])
             main_env.buffer_record(v1)
             if i>0: main_env.update_bandit()
-
+            main_env.process_bandit_buffer(30)
             main_env.train_agent()
 
             rAll += r
@@ -114,9 +114,11 @@ for i in range(main_env.num_episodes):
 
 
         #preocess bandit buffer
-        main_env.process_bandit_buffer()
+        print('Confidence bound:',main_env.linucb_agent.return_upper_bound(feature))
+        #main_env.process_bandit_buffer()
         main_env.sys_tracker.record_time(main_env.env)
-        print(main_env.linucb_agent.return_upper_bound(feature))
+        regret=main_env.bandit_regret()
+        print('the regret of the this round is:',regret)
         ilist.append(i)
         rlist.append(rAll_unshape[0]); rlist_relo.append(rAll_unshape[2]);rlist_wait.append(rAll_unshape[1])
         plt.clf()

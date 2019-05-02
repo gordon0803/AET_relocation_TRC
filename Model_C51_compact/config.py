@@ -10,18 +10,18 @@ NET_CONFIG={
 
 if NET_CONFIG['case']=='small':
     TRAIN_CONFIG = {
-        'batch_size':64,
+        'batch_size':32,
         'trace_length': 8,
         'update_freq':50,
-        'lstm_unit':256,
+        'lstm_unit':1024,
         'y': .9,
-        'elimination_threshold':0.1,
+        'elimination_threshold':0.3,#use 0.1
         'trip_threshold':0.1,
         'startE':1,
         'endE':0.05,
-        'learning_rate_opt':0.0005,
-        'anneling_steps':200*1000,
-        'num_episodes':400,
+        'learning_rate_opt':0.0001, #0.01 or 0.00005
+        'anneling_steps':500*1000,
+        'num_episodes':600,
         'buffer_size':5000,
         'prioritized':0,
         'load_model':False,
