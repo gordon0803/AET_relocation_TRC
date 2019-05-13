@@ -125,6 +125,11 @@ class experience_buffer():
             self.buffer[0:(1 + len(self.buffer)) - self.buffer_size] = []
         self.buffer.append(experience)
 
+    def cut(self,length):
+        #discard a batch of experience recorded, onluy keep -1-length:-1 buffers
+        if len(self.buffer)>length:
+            self.buffer=self.buffer[-1-length:]
+
     def sample(self, batch_size, trace_length):
         sampled_episodes=[]
         for i in range(batch_size):
@@ -145,10 +150,15 @@ class bandit_buffer():
                 self.buffer[0:(1 + len(self.buffer)) - self.buffer_size] = []
             self.buffer.append(experience)
 
-        def sample(self, batch_size):
+        def cut(self, length):
+            # discard a batch of experience recorded, onluy keep -1-length:-1 buffers
+            if len(self.buffer) > length:
+                self.buffer = self.buffer[-1 - length:]
+
+        def recent_sample(self,batch_size):
             sampled_episodes = []
             for i in range(batch_size):
-                sampled_episodes.append(random.choice(self.buffer))
+                sampled_episodes.append(random.choice(self.buffer[-len(self.buffer)//5:]))
             sampledTraces = []
             for episode in sampled_episodes:
                 sampledTraces.append(episode)
@@ -156,50 +166,16 @@ class bandit_buffer():
             return np.reshape(sampledTraces, [batch_size, 9])
 
 
-#prioritized experience buffer
-class per_experience_buffer():
-    epsilon = 0.00001  # small amount to avoid zero priority
-    alpha = 0.6  # [0~1] convert the importance of TD error to priority
-    beta = 0.4  # importance-sampling, from initial value increasing to 1
-    beta_increment_per_sampling = 0.6/(800*100)
-    abs_err_upper = 1.  # clipped abs error
-
-
-    def __init__(self, capacity=3000):
-        self.tree = SumTree(capacity)
-        self.capacity=capacity
-
-    def add(self, transition):
-        max_p = np.max(self.tree.tree[-self.tree.capacity:])
-        if max_p == 0:
-            max_p = self.abs_err_upper
-        self.tree.add(max_p, transition)  # set the max p for new p
-
-    def sample(self, batch_size,trace_length):
-        b_idx, b_memory, ISWeights = np.empty((batch_size,), dtype=np.int32), [], np.empty((batch_size, trace_length))
-        pri_seg = self.tree.total_p / batch_size  # priority segment
-        self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])  # max = 1
-        templist=self.tree.tree[-self.tree.capacity:]
-        min_prob = np.min(templist[np.nonzero(templist)]) / self.tree.total_p
-
-        for i in range(batch_size):
-            a, b = pri_seg * i, pri_seg * (i + 1)
-            v = np.random.uniform(a, b)
-            idx, p, data = self.tree.get_leaf(v)
-            prob = p / self.tree.total_p
-            ISWeights[i, :] = np.power(prob/min_prob, -self.beta)
-            b_idx[i]=idx
-            b_memory.append(data)
-
-        b_memory=np.reshape(b_memory, [batch_size * trace_length, 4])
-        return b_idx, b_memory, ISWeights
-
-    def batch_update(self, tree_idx, abs_errors):
-        abs_errors += self.epsilon  # convert to abs and avoid 0
-        clipped_errors = np.minimum(abs_errors, self.abs_err_upper)
-        ps = np.power(clipped_errors, self.alpha)
-        for ti, p in zip(tree_idx, ps):
-            self.tree.update(ti, p)
+        def sample(self, batch_size):
+            sampled_episodes = []
+            size=max(len(self.buffer)//5,2000)
+            for i in range(batch_size):
+                sampled_episodes.append(random.choice(self.buffer[-size:]))
+            sampledTraces = []
+            for episode in sampled_episodes:
+                sampledTraces.append(episode)
+            sampledTraces = np.array(sampledTraces)
+            return np.reshape(sampledTraces, [batch_size, 9])
 
 
 #functions

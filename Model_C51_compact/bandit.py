@@ -19,21 +19,25 @@ class linucb_agent():
     def __init__(self,n_action,d):
         #number of actions: n_action
         #feature length: d
-        self.alpha=0.1
+        self.alpha=1
         self.round=0;
-        self.d=d
+        self.lmbda=.5; #penalty parameter for l2 regression
+        self.d=int(d)
         self.n_action=n_action
         self.Aa=[] #collection of A for each arm
         self.ba=[] #collection of vectors to compute disjoint part d*1
         self.AaI=[] #inverse of A
         self.theta=[]
-
+        self.arm_det=[]
+        self.alpha_list=[]
         #initialize parameters
         for i in range(n_action):
-            self.Aa.append(0.1*np.identity(self.d))
+            self.Aa.append(self.lmbda*np.identity(self.d))
             self.ba.append(np.zeros(self.d))
             self.AaI.append(np.identity(self.d))
             self.theta.append(np.zeros(self.d))
+            self.arm_det.append(1)
+            self.alpha_list.append(1)
 
     def update(self,features,actions,rewards):
         #update all observed arms
@@ -59,7 +63,7 @@ class linucb_agent():
         rewards_exp=rewards[seq_id,actions_exp]
 
         for j in range(self.n_action):
-            feature = features_exp[actions_exp == j]
+            feature = features_exp[actions_exp == j][:,j*self.d:(j+1)*self.d]
             reward = rewards_exp[actions_exp == j]
             outer_feature = feature.T.dot(feature)
             outer_ba = feature.T .dot(reward)
@@ -78,12 +82,16 @@ class linucb_agent():
         # print('process 2:', time.time() - t1)
         #inverse doesn't have to be calculated for each feature
         for action in range(self.n_action):
-            self.AaI[action]=scipy.linalg.pinv2(np.identity(self.d)+self.Aa[action]) #inverse
+            self.AaI[action]=scipy.linalg.inv(self.Aa[action]) #inverse
             self.theta[action]=np.dot(self.AaI[action],self.ba[action])
+            self.arm_det[action]=np.log(np.sqrt(np.linalg.det(self.Aa[action]))*((np.linalg.det(self.lmbda*np.identity(self.d)))**-0.5)*3)
+            self.alpha_list[action]=2*np.sqrt(2*self.arm_det[action])+np.sqrt(self.lmbda)
 
 
         # self.alpha=0.01
-        self.alpha=0.5*np.sqrt(self.d*np.log(1+self.round*100))+np.sqrt(0.1)
+
+
+        #self.alpha=0.05*np.sqrt(self.d*np.log(1+self.round*10*1/0.1))+np.sqrt(0.1)
         # self.alpha=0.01
         #print(self.alpha,self.round)
 
@@ -99,7 +107,7 @@ class linucb_agent():
         s=feature
         # prob=[np.dot(s,self.theta[i])+self.alpha*np.sqrt(np.dot(np.dot(s,self.AaI[i]),s)) for i in range(self.n_action)]
 
-        prob=np.fromiter((np.dot(s,self.theta[i])-self.alpha*np.sqrt(np.dot(np.dot(s,self.AaI[i]),s)) for i in range(self.n_action)), float)
+        prob=np.fromiter((np.dot(s[i*self.d:(i+1)*self.d],self.theta[i])+self.alpha_list[i]*np.sqrt(np.dot(np.dot(s[i*self.d:(i+1)*self.d],self.AaI[i]),s[i*self.d:(i+1)*self.d])) for i in range(self.n_action)), float)
 
 
         # prob=_return_upper_bound(s,self.theta,self.alpha,self.AaI,self.n_action)
@@ -109,7 +117,7 @@ class linucb_agent():
     def return_upper_bound_batch(self,feature):
         feature=np.vstack(feature)
         # prob=np.array([np.einsum('ij,j->i',feature,self.theta[i])+self.alpha*np.sqrt(np.einsum('ij,jj,ij->i',feature,self.AaI[i],feature)) for i in range(self.n_action)]).T
-        prob = np.array([np.einsum('ij,j->i', feature, self.theta[i]) - self.alpha * np.sqrt(np.einsum('ij,jj,ij->i', feature, self.AaI[i], feature)) for i in range(self.n_action)]).T
+        prob = np.array([np.einsum('ij,j->i', feature[:,i*self.d:(i+1)*self.d], self.theta[i]) + self.alpha_list[i] * np.sqrt(np.einsum('ij,jj,ij->i', feature[:,i*self.d:(i+1)*self.d], self.AaI[i], feature[:,i*self.d:(i+1)*self.d])) for i in range(self.n_action)]).T
 
 
         # prob=[self.return_upper_bound(feature[i]) for i in range(len(feature))]
@@ -118,27 +126,30 @@ class linucb_agent():
 
         return np.array(prob)
 
-    def measure_error(self,feature,score):
+    def measure_error(self,feature,score,threshold):
         feature=np.vstack(feature)
         score=np.vstack(score)
-        mean=np.array([np.einsum('ij,j->i', feature, self.theta[i]) for i in range(self.n_action)]).T
-        bound=np.array([self.alpha * np.sqrt(np.einsum('ij,jj,ij->i', feature, self.AaI[i], feature)) for i in range(self.n_action)]).T
-        count1=(mean-(bound+1*scipy.special.erfinv(-0.9)))<config.TRAIN_CONFIG['elimination_threshold'] #eliminated items
-        count2=score<config.TRAIN_CONFIG['elimination_threshold'] #eliminated items
-        count=np.absolute(count1.astype(np.float32)*count2.astype(np.float32)-count2.astype(np.float32)) #error in count
+        mean=np.array([np.einsum('ij,j->i', feature[:,i*self.d:(i+1)*self.d], self.theta[i]) for i in range(self.n_action)]).T
+        bound=np.array([self.alpha_list[i] * np.sqrt(np.einsum('ij,jj,ij->i', feature[:,i*self.d:(i+1)*self.d], self.AaI[i], feature[:,i*self.d:(i+1)*self.d])) for i in range(self.n_action)]).T
+        #print(mean[1:3,:],bound[1:3,:],score[1:3,:])
+        count=mean-score<-bound-0*np.sqrt(2*0.1)*scipy.special.erfinv(-0.7)
+        count=np.asarray(mean+bound+0*np.sqrt(2*0.1)*scipy.special.erfinv(-0.9)<threshold,float)*np.asarray(score>threshold,float)
+        eliminate_total=score>threshold
+        arm_err=[]
+        for st in range(self.n_action):
+            arm_err.append(count[:,st].sum()/eliminate_total[:,st].sum())
         err_total=count.sum()
-        err=err_total/(self.n_action*len(score))
-        return err
+        err=err_total/eliminate_total.sum()
+        return err,arm_err
 
 
-    def return_regret(self,feature,score):
-        err=self.measure_error(feature,score)
-        if err>.05+np.sqrt(np.log(10)/(2*len(score)*self.n_action)):
+    def return_regret(self,feature,score,threshold):
+        err,arm_err=self.measure_error(feature,score,threshold)
+        if err>.1+np.sqrt(np.log(10)/(2*len(score)*self.n_action)):
             switch=1
         else:
             switch=0
-
-        return err,switch
+        return err,switch,arm_err
 
 
 

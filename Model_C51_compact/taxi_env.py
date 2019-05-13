@@ -95,8 +95,8 @@ class taxi_simulator():
         if not isinstance(taxi_input, list):
             taxi_input = rnd_array
 
+        taxi_input=[self.taxi_input]*self.N
         self.total_taxi=sum(taxi_input)
-
         for i in range(self.N):
             for t in range(taxi_input[i]):
                 taxi = taxi_agent(200)  # battery is set to 200 here
@@ -328,7 +328,7 @@ class taxi_simulator():
         # give the states of the system after all the executions
         # the state of the system is a 3 N by N matrix
         state = np.ones([self.N, self.N, 5])
-        passenger_gap = np.zeros((self.N, self.N))
+        passenger_gap = -np.ones((self.N, self.N))
         taxi_in_travel = np.zeros((self.N, self.N))
         taxi_in_relocation = np.zeros((self.N, self.N))
         taxi_in_charge=np.zeros((self.N,self.N))
@@ -347,7 +347,7 @@ class taxi_simulator():
 
 
         for i in range(self.N):
-            passenger_gap[i, i] = len(self.passenger_qtime[i])/self.max_passenger
+            passenger_gap[i, i] = len(self.passenger_qtime[i])/20
             awaiting_pass[i]=len(self.passenger_qtime[i])
         #
         for t in self.taxi_in_travel:
@@ -360,14 +360,13 @@ class taxi_simulator():
                 incoming_taxi[t.destination]+=1
 
         #normalize for taxis
-        taxi_in_travel=taxi_in_travel/self.total_taxi;
-        taxi_in_relocation=taxi_in_relocation/self.total_taxi
-        taxi_in_charge=taxi_in_charge/self.total_taxi;
-        taxi_in_q=taxi_in_q/self.total_taxi;
-
+        taxi_in_travel=taxi_in_travel/20;
+        taxi_in_relocation=taxi_in_relocation/20
+        taxi_in_charge=taxi_in_charge/20;
+        taxi_in_q=taxi_in_q/20;
 
         #all states are within 0-1, continuous value
-        state[:, :, 0] = passenger_gap/self.total_taxi;
+        state[:, :, 0] = passenger_gap;
         state[:, :, 1] = taxi_in_travel;
         state[:, :, 2] = taxi_in_relocation;
         state[:, :, 3] = taxi_in_q;
@@ -375,18 +374,24 @@ class taxi_simulator():
         # reward
         total_taxi_in_travel = taxi_in_travel.sum()
         total_taxi_in_relocation = taxi_in_relocation.sum()
-        reward = (-sum(awaiting_pass)/(self.max_passenger)+1)
-        oldreward=np.array([-sum(awaiting_pass)/(self.max_passenger)-total_taxi_in_relocation.sum(),-sum(awaiting_pass)/(self.max_passenger),-total_taxi_in_relocation.sum()])
+        total_taxi_in_charging=taxi_in_charge.sum()
+        reward = -sum(awaiting_pass)/10-total_taxi_in_relocation.sum()+1
+
+
+
+        oldreward=np.array([total_taxi_in_travel,total_taxi_in_relocation,total_taxi_in_charging,taxi_in_q.sum()])
 
 
         #calculate linear features and scores
         feature=[]
         score=[]
         for i in range(self.N):
-            feature+=[passenger_gap[i,i],taxi_in_q[i,i],taxi_in_relocation[:,i].sum(),taxi_in_travel[:,i].sum()]
+            feature+=[passenger_gap[i,i],taxi_in_q[i,i],taxi_in_relocation[:,i].sum(),taxi_in_travel[:,i].sum(),taxi_in_relocation[i,:].sum(),taxi_in_travel[i,:].sum()]
             #update score
             if self.taxi_in_q[i]: #drivers waiting passengers
-                self.score[i]=1
+                self.score[i]=-min(len(self.taxi_in_q[i])/10,1)
+            elif self.passenger_qtime[i]:
+                self.score[i]=min(len(self.passenger_qtime[i])/10,1)
             else:
                 self.score[i]=0
 

@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9f9bb2a5-1324-45c3-9c3c-7aad3f4f31a9" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/DRQN_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/DRQN_agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/bandit.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/bandit.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/demand_gen.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/demand_gen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/env_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/env_agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/log/IDRQN_reward_log_2019-05-01 20-10-37.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/log/IDRQN_reward_log_2019-05-01 20-10-37.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/network.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/network.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/new_IDRQN_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/new_IDRQN_main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_12.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_13.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_14.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_15.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_16.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_17.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_20.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_21.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_22.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_23.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_24.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_25.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_26.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_27.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_28.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_29.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_30.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_31.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_32.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_33.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_34.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_35.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_36.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_37.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_38.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_39.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_40.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_41.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_42.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/od_mat/od_43.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/simulation_input.dat" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/simulation_input.dat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/taxi_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/taxi_env.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Model_C51_compact/tf_conv_net.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Model_C51_compact/tf_conv_net.py" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FavoritesManager">
+    <favorites_list name="Model_C51_compact" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/config.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="76">
+              <caret line="4" column="17" selection-start-line="4" selection-start-column="17" selection-end-line="4" selection-end-column="17" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DRQN_agent.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="406">
+              <caret line="299" column="26" selection-start-line="299" selection-start-column="26" selection-end-line="299" selection-end-column="26" />
+              <folding>
+                <element signature="e#88#97#0" expanded="true" />
+                <element signature="e#26196#26243#0" />
+                <element signature="e#29401#29986#0" />
+                <element signature="e#18461#19459#0" />
+                <element signature="e#19516#19917#0" />
+                <element signature="e#19972#22067#0" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/network.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <caret column="23" selection-start-column="23" selection-end-column="23" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tf_conv_net.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="190">
+              <caret line="10" column="47" selection-start-line="10" selection-start-column="47" selection-end-line="10" selection-end-column="47" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bandit.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="457">
+              <caret line="118" column="92" selection-start-line="118" selection-start-column="92" selection-end-line="118" selection-end-column="92" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/GREEDY_main.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <caret column="25" selection-start-column="25" selection-end-column="25" />
+              <folding>
+                <element signature="e#47#56#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/new_IDRQN_main.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="829">
+              <caret line="110" column="18" selection-start-line="110" selection-start-column="18" selection-end-line="110" selection-end-column="18" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/taxi_env.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="275">
+              <caret line="300" column="123" selection-start-line="300" selection-start-column="123" selection-end-line="300" selection-end-column="123" />
+              <folding>
+                <element signature="e#250#268#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/experiment.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <caret column="23" selection-start-column="23" selection-end-column="23" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/env_agent.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="95">
+              <caret line="23" column="18" selection-start-line="23" selection-start-column="18" selection-end-line="23" selection-end-column="18" />
+              <folding>
+                <element signature="e#37#50#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>256</find>
+      <find>pre_train</find>
+      <find>self.pre_train_steps</find>
+      <find>self.num_episodes</find>
+      <find>self.num_episod</find>
+      <find>feature</find>
+      <find>self.batch_size</find>
+      <find>predict_score</find>
+      <find>_select_target</find>
+      <find>reward</find>
+      <find>Qout2</find>
+      <find>quantile_mask</find>
+      <find>self.regret</find>
+      <find>softmax</find>
+      <find>5</find>
+      <find>self.total_taxi</find>
+      <find>selu</find>
+      <find>arm_err</find>
+      <find>self.N_station * 4</find>
+      <find>4.0</find>
+      <find>self.alpha</find>
+      <find>self.e_threshold</find>
+      <find>predict</find>
+      <find>self.actions</find>
+      <find>relu</find>
+      <find>self.N_station+1</find>
+      <find>0.2</find>
+      <find>'linear'</find>
+      <find>leaky_relu</find>
+      <find>'selu'</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>wait_max</replace>
+      <replace>W',activation='linear',</replace>
+      <replace>config.TRAIN_CONFIG['lstm_unit']</replace>
+      <replace>None</replace>
+      <replace>tf.reduce_sum(</replace>
+      <replace>self.N_station*4</replace>
+      <replace>256</replace>
+      <replace>tanh</replace>
+      <replace>crelu</replace>
+      <replace>relu</replace>
+      <replace>4.0</replace>
+      <replace>leaky_relu</replace>
+      <replace>6.0</replace>
+      <replace>'relu'</replace>
+      <replace>linear</replace>
+      <replace>self.N_station</replace>
+      <replace>'leaky_relu</replace>
+      <replace>'selu'</replace>
+      <replace>selu</replace>
+      <replace>'linear'</replace>
+    </replaceStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/GREEDY_main.py" />
+        <option value="$PROJECT_DIR$/taxi_util.py" />
+        <option value="$PROJECT_DIR$/experiment.py" />
+        <option value="$PROJECT_DIR$/drqn_agent_action.py" />
+        <option value="$PROJECT_DIR$/demand_gen.py" />
+        <option value="$PROJECT_DIR$/network.py" />
+        <option value="$PROJECT_DIR$/bandit.py" />
+        <option value="$PROJECT_DIR$/taxi_env.py" />
+        <option value="$PROJECT_DIR$/new_IDRQN_main.py" />
+        <option value="$PROJECT_DIR$/tf_conv_net.py" />
+        <option value="$PROJECT_DIR$/env_agent.py" />
+        <option value="$PROJECT_DIR$/DRQN_agent.py" />
+        <option value="$PROJECT_DIR$/config.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="x" value="1720" />
+    <option name="width" value="1720" />
+    <option name="height" value="1400" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="Model_C51_compact - hierarchical" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Model_C51_compact - hierarchical" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Model_C51_compact" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python.new_IDRQN_main">
+    <configuration name="DRQN_agent" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Model_C51_compact" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DRQN_agent.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="GREEDY_main" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Model_C51_compact" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/GREEDY_main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="experiment" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Model_C51_compact" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/experiment.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="new_IDRQN_main" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Model_C51_compact" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/new_IDRQN_main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.new_IDRQN_main" />
+        <item itemvalue="Python.GREEDY_main" />
+        <item itemvalue="Python.experiment" />
+        <item itemvalue="Python.DRQN_agent" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9f9bb2a5-1324-45c3-9c3c-7aad3f4f31a9" name="Default Changelist" comment="" />
+      <created>1556329280342</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1556329280342</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="1720" y="0" width="1720" height="1400" extended-state="0" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49875" visible="true" weight="0.16111772" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" sideWeight="0.50125" side_tool="true" weight="0.32261905" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32991317" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49881095" visible="true" weight="0.28887135" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32991317" />
+      <window_info anchor="bottom" id="Terminal" order="8" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50118905" side_tool="true" weight="0.36858723" />
+      <window_info anchor="bottom" id="Python Console" order="10" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+    <layout-to-restore>
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49875" weight="0.16111772" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" sideWeight="0.50125" side_tool="true" weight="0.32261905" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32991317" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49881095" visible="true" weight="0.28887135" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.32991317" />
+      <window_info anchor="bottom" id="Terminal" order="8" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50118905" side_tool="true" weight="0.36858723" />
+      <window_info anchor="bottom" id="Python Console" order="10" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout-to-restore>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/GREEDY_agent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="16" column="37" selection-start-line="16" selection-start-column="37" selection-end-line="16" selection-end-column="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/ProgramData/Anaconda3/envs/tf_gpu/Lib/site-packages/tensorflow/python/keras/engine/base_layer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3026">
+          <caret line="210" column="74" lean-forward="true" selection-start-line="210" selection-start-column="74" selection-end-line="210" selection-end-column="74" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/ProgramData/Anaconda3/envs/tf_gpu/Lib/site-packages/tensorflow/python/keras/layers/core.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="933" selection-start-line="933" selection-end-line="933" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/system_tracker.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-399">
+          <caret line="108" column="74" lean-forward="true" selection-start-line="108" selection-start-column="74" selection-end-line="108" selection-end-column="74" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Model_C51_compact_individual net/new_IDRQN_main.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/taxi_util.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="21" selection-start-column="21" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test_env.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/drqn_agent_action.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-3">
+          <caret line="198" column="56" lean-forward="true" selection-start-line="198" selection-start-column="56" selection-end-line="198" selection-end-column="56" />
+          <folding>
+            <element signature="e#88#97#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/demand_gen.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1021">
+          <caret line="105" column="19" selection-start-line="105" selection-start-column="19" selection-end-line="105" selection-end-column="19" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/experiment.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="23" selection-start-column="23" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/taxi_env.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="275">
+          <caret line="300" column="123" selection-start-line="300" selection-start-column="123" selection-end-line="300" selection-end-column="123" />
+          <folding>
+            <element signature="e#250#268#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tf_conv_net.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="10" column="47" selection-start-line="10" selection-start-column="47" selection-end-line="10" selection-end-column="47" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bandit.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="457">
+          <caret line="118" column="92" selection-start-line="118" selection-start-column="92" selection-end-line="118" selection-end-column="92" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/GREEDY_main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="25" selection-start-column="25" selection-end-column="25" />
+          <folding>
+            <element signature="e#47#56#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/new_IDRQN_main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="829">
+          <caret line="110" column="18" selection-start-line="110" selection-start-column="18" selection-end-line="110" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/network.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="23" selection-start-column="23" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/env_agent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="23" column="18" selection-start-line="23" selection-start-column="18" selection-end-line="23" selection-end-column="18" />
+          <folding>
+            <element signature="e#37#50#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DRQN_agent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="406">
+          <caret line="299" column="26" selection-start-line="299" selection-start-column="26" selection-end-line="299" selection-end-column="26" />
+          <folding>
+            <element signature="e#88#97#0" expanded="true" />
+            <element signature="e#26196#26243#0" />
+            <element signature="e#29401#29986#0" />
+            <element signature="e#18461#19459#0" />
+            <element signature="e#19516#19917#0" />
+            <element signature="e#19972#22067#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="76">
+          <caret line="4" column="17" selection-start-line="4" selection-start-column="17" selection-end-line="4" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

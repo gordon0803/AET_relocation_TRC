@@ -48,7 +48,7 @@ if config.NET_CONFIG['case']=='small':
     exp_dist=np.array(tempdist)
     OD_mat=tempOD
 
-    taxi_input = 6
+    taxi_input = 10
 
     simulation_input['N_station'] = N_station;
     simulation_input['distance'] = distance
@@ -66,7 +66,7 @@ if config.NET_CONFIG['case'] == 'large':
     travel_time = travel_time[:N_station, :N_station]
     # load the list of OD files, and normalize them to proper time interval
     OD_mat = []
-    normalize_od = 120;
+    normalize_od = 300;
     total_demand = 0
     for file in sorted(glob.glob('od_mat/*.csv'), key=lambda name: int(name[10:-4])):
         print(file)
@@ -78,7 +78,7 @@ if config.NET_CONFIG['case'] == 'large':
     # OD_mat=np.loadtxt(open('nycdata/od_70.csv','rb'),delimiter=',')
 
     # convert arrival rate into
-    travel_time = travel_time * 4
+    travel_time = travel_time * 10
 
     # process arrival input, each item is the 48 time intervals for each station
     arrival_rate = [[] for i in range(N_station)]  # initialize

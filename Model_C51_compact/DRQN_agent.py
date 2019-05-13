@@ -32,7 +32,7 @@ class drqn_agent_efficient():
         self.count_single_act=0
 
         #QR params
-        self.N=32; #number of quantiles
+        self.N=51; #number of quantiles
         self.k=1; #huber loss
         self.gamma=config.TRAIN_CONFIG['y']
         self.conf=1
@@ -70,6 +70,7 @@ class drqn_agent_efficient():
         self.main_rnn_value = []
         self.station_score = []
         self.predict_score = []
+        self.act_globalnorm=[]
         self.rnn_holder = tf.placeholder(shape=[None, self.lstm_units], dtype=tf.float32, name='main_input')
         self.rnn_cstate_holder = tf.placeholder(shape=[1, None, self.lstm_units], dtype=tf.float32, name='main_input')
         self.rnn_hstate_holder = tf.placeholder(shape=[1, None, self.lstm_units], dtype=tf.float32, name='main_input')
@@ -124,9 +125,9 @@ class drqn_agent_efficient():
         convFlat = tf.reshape(slim.flatten(conv), [self.trainLength,self.batch_size, self.h_size],
                               name=myScope_main + '_convlution_flattern')
         #
-        # iter=tf.reshape(self.iter_holder,[self.batch_size,self.trainLength,1])
-        # eps=tf.reshape(self.eps_holder,[self.batch_size,self.trainLength,1])
-        # convFlat=tf.concat([convFlat,iter,eps],axis=-1)
+        iter=tf.reshape(self.iter_holder,[self.trainLength,self.batch_size,1])
+        eps=tf.reshape(self.eps_holder,[self.trainLength,self.batch_size,1])
+        convFlat=tf.concat([convFlat,iter,eps],axis=-1)
 
         rnn, rnn_state = lstm(inputs=convFlat,training=True)
         rnn = tf.reshape(rnn, shape=[-1, self.lstm_units], name=myScope_main + '_reshapeRNN_out')
@@ -144,6 +145,7 @@ class drqn_agent_efficient():
 
 
         V_list=[]
+        V_predict=[]
         A_list=[]
         for i in range(self.N_station):
             myScope = 'DRQN_main_' + str(i)
@@ -175,6 +177,7 @@ class drqn_agent_efficient():
             # Value = tf.reshape(tf.tile(Value, [1, self.N_station + 1]),
             #                    [self.batch_size * self.trainLength, self.N_station + 1, self.N])
             V_list.append(Value)
+            V_predict.append(Value2)
             A_list.append(localA)
             # localA2 = tf.reshape(localA2, [-1, self.N_station + 1, self.N])
 
@@ -195,10 +198,11 @@ class drqn_agent_efficient():
             predict = tf.argmax(tf.subtract(q, self.station_score[i]), 1, name=myScope + '_prediction')
             self.mainPredict.append(predict)
 
+        self.V_list=V_list
         sumV=tf.reduce_sum(V_list,axis=0) #sum of valeus
         for i in range(self.N_station):
             myScope = 'DRQN_main_' + str(i)
-            Qt =sumV+tf.subtract(A_list[i], tf.reduce_mean(A_list[i], axis=1, keepdims=True),
+            Qt =V_list[i]+tf.subtract(A_list[i], tf.reduce_mean(A_list[i], axis=1, keepdims=True),
                                      name=myScope + '_unshaped_Qout')
             Qout = tf.reshape(Qt, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
             self.mainQout.append(Qout)
@@ -227,9 +231,9 @@ class drqn_agent_efficient():
         convFlat = tf.reshape(slim.flatten(conv), [self.trainLength, self.batch_size, self.h_size],
                               name=myScope_main + '_convlution_flattern')
 
-        # iter=tf.reshape(self.iter_holder,[self.batch_size,self.trainLength,1])
-        # eps=tf.reshape(self.eps_holder,[self.batch_size,self.trainLength,1])
-        # convFlat=tf.concat([convFlat,iter,eps],axis=-1)
+        iter=tf.reshape(self.iter_holder,[self.trainLength,self.batch_size,1])
+        eps=tf.reshape(self.eps_holder,[self.trainLength,self.batch_size,1])
+        convFlat=tf.concat([convFlat,iter,eps],axis=-1)
 
         rnn, rnn_state = lstm(inputs=convFlat,training=True)
         rnn = tf.reshape(rnn, shape=[-1, self.lstm_units], name=myScope_main + '_reshapeRNN_out')
@@ -264,16 +268,17 @@ class drqn_agent_efficient():
         sumV=tf.reduce_sum(V_list,axis=0)
         for i in range(self.N_station):
             myScope = 'DRQN_target_' + str(i)
-            Qt =sumV+tf.subtract(A_list[i], tf.reduce_mean(A_list[i], axis=1, keepdims=True),
+            Qt =V_list[i]+tf.subtract(A_list[i], tf.reduce_mean(A_list[i], axis=1, keepdims=True),
                                      name=myScope + '_unshaped_Qout')
             Qout = tf.reshape(Qt, [-1, self.N_station+1, self.N])  # reshape it to N_station by self.atoms dimension
             self.targetQout.append(Qout)
 
 
     def build_train(self):
-        self.trainer = tf.train.RMSPropOptimizer(learning_rate=config.TRAIN_CONFIG['learning_rate_opt'], name='Adam_opt')
-        lossmask1 = tf.zeros([self.train_length//2,self.batch_size])
-        lossmask2 = tf.ones([self.train_length//2, self.batch_size])
+        #we implement global learning rate decay!
+        self.trainer = tf.train.AdamOptimizer(learning_rate=config.TRAIN_CONFIG['learning_rate_opt'], name='Adam_opt')
+        lossmask1 = tf.zeros([1,self.batch_size])
+        lossmask2 = tf.ones([self.trainLength-1, self.batch_size])
         lossmask=tf.concat([lossmask1,lossmask2],0)
         lossmask = tf.reshape(lossmask, [-1])
         for i in range(self.N_station):
@@ -295,11 +300,12 @@ class drqn_agent_efficient():
             loss = self._compute_loss(mainz,self.targetQ[i])
             loss = tf.reduce_mean(loss*lossmask, name=myScope + '_maskloss')
             # In order to only propogate accurate gradients through the network, we will mask the first
-            # half of the losses for each trace as per Lample & Chatlot 2016
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)  #update ops
-            updateModel = self.trainer.minimize(loss, name=myScope + '_training')
-            update_group=tf.group([updateModel, update_ops])
-            self.updateModel.append(update_group)
+            gradients, variables = zip(*self.trainer.compute_gradients(loss))
+            gradients, _ = tf.clip_by_global_norm(gradients, 50.0)
+            gbn=tf.global_norm(gradients)
+            self.act_globalnorm.append(gbn)
+            updateModel = self.trainer.apply_gradients(zip(gradients, variables))
+            self.updateModel.append(updateModel)
 
     def drqn_build(self):
         self.build_main()
@@ -325,6 +331,12 @@ class drqn_agent_efficient():
         # make the prediction
        # print(self.conf)
         valid[station]=True
+        #
+        # if np.random.random()>e:
+        #     #no elimination
+        #     valid[:]=True
+        #     invalid[:]=False
+
         if rng<e: #epsilon greedy
             if e==1:
                 action=np.random.randint(len(predict_score))

@@ -20,7 +20,7 @@ class env_agent():
         self.sys_tracker = system_tracker()
         self.sys_tracker.initialize(config, self.distance, self.travel_time, self.arrival_rate, int(self.taxi_input), self.N_station, self.num_episodes,
                                self.max_epLength)
-        self.tau=0.05 #frequency for target net update
+        self.tau=1#.4frequency for target net update
 
         self.regret=0
         # process a new distance to avoid non zeros divison
@@ -36,6 +36,14 @@ class env_agent():
         self.jList = []
         self.rList = []
         self.total_steps = 0
+        self.swap_steps = 0
+
+        self.bandit_list=[bandit.linucb_agent(self.N_station, 6.0)]
+        self.max_bandit=10
+        self.eliminate_threshold=config.TRAIN_CONFIG['elimination_threshold']
+
+        self.target_threshold=config.TRAIN_CONFIG['target_elimination_threshold']
+        self.et_stepDrop = (self.eliminate_threshold - self.target_threshold) / self.anneling_steps
 
         self.total_train_iter = 1;
 
@@ -43,11 +51,10 @@ class env_agent():
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
-        self.linucb_agent = bandit.linucb_agent(self.N_station, self.N_station * 4)
-        self.exp_replay = network.experience_buffer(3000)  # a single buffer holds everything
-        self.bandit_buffer = network.bandit_buffer(1000)
+        self.linucb_agent = bandit.linucb_agent(self.N_station, 6.0)
+        self.exp_replay = network.experience_buffer(100*self.max_epLength)  # a single buffer holds everything
+        self.bandit_buffer = network.bandit_buffer(100*self.max_epLength)
         self.bandit_swap_e = 1;
-        self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4)
         print('System Successfully Initialized!')
 
     def create_session(self):
@@ -69,6 +76,7 @@ class env_agent():
         self.sys_tracker.new_episode() #tracker new episode
         self.env.reset() #taxi system reset
         self.init_state_list=[]
+        self.act_norm=[]
         self.buffer_count=0
 
 
@@ -97,9 +105,9 @@ class env_agent():
 
         # predict_score = sess.run(linear_model.linear_Yh, feed_dict={linear_model.linear_X: [feature]})
         predict_score = self.linucb_agent.return_upper_bound(feature)
-        predict_score = predict_score*self.distance
-        valid = predict_score < config.TRAIN_CONFIG['elimination_threshold']
-        invalid = predict_score >= config.TRAIN_CONFIG['elimination_threshold']
+        predict_score = predict_score/self.distance#self.distance
+        valid = predict_score > self.eliminate_threshold
+        invalid = predict_score <= self.eliminate_threshold
         rnn_value,initial_rnn_state=self.measure_rnn(state,j,tick)
         self.init_state_list.append(initial_rnn_state) #record rnn state
         for station in range(self.N_station):
@@ -132,37 +140,37 @@ class env_agent():
             # start training here
             if self.e > self.endE:
                 self.e -= self.stepDrop
+                self.eliminate_threshold-=self.et_stepDrop
 
     def update_bandit(self):
         #update bandit every 500 steps
-        if self.total_steps%(self.update_freq)==0:
-            linubc_train = self.bandit_buffer.sample(self.batch_size)
+       # if self.total_steps%(self.max_epLength//2)==0: #update twice in an episode
+            # self.linucb_agent=bandit.linucb_agent(self.N_station, 6.0)
+            linubc_train = self.bandit_buffer.sample(self.max_epLength)
             self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
-            self.linucb_agent_backup.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
-
 
 
     def bandit_regret(self):
-        linubc_train=self.bandit_buffer.sample(self.batch_size*50)
+        linubc_train=self.bandit_buffer.recent_sample(len(self.bandit_buffer.buffer)//2)
         #check the regret
-        regret,switch=self.linucb_agent.return_regret(linubc_train[:,4],linubc_train[:,5])
+        regret,switch,arm_err=self.linucb_agent.return_regret(linubc_train[:,4],linubc_train[:,5],self.eliminate_threshold)
 
         #check if we need to switch bandit by end of each round
-            #self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4) #initialize and discard previous bandit
-        if switch: #5% error occured:
+            #self.linucb_agent_backup = bandit.linucb_agent(self.N_station, 6.0) #initialize and discard previous bandit
+        if self.total_steps>self.pre_train_steps and switch: #5% error occaaured:
             self.regret=0#reset regret threshold
-            self.linucb_agent=self.linucb_agent_backup
-            self.linucb_agent_backup=bandit.linucb_agent(self.N_station,self.N_station*4)
+            gap=self.total_steps-self.swap_steps
+            self.exp_replay.cut(len(self.exp_replay.buffer)//2)  # cut the bandit
+            self.bandit_buffer.cut(len(self.bandit_buffer.buffer)//2)  # cut the size by half
+            linubc_train = self.bandit_buffer.sample(self.max_epLength)
+            # check the regret
+            self.linucb_agent=bandit.linucb_agent(self.N_station, 6.0)
+            self.linucb_agent.update(linubc_train[:, 4], linubc_train[:, 1], linubc_train[:, 5])
+
+
             print('we swap bandit here')
-        else:
-            if regret>self.regret and self.total_steps>self.pre_train_steps:
-                self.linucb_agent_backup = bandit.linucb_agent(self.N_station, self.N_station * 4)
-                print('new bandit')
-                self.regret=regret #keep recording the lowest regret
 
-
-
-        return regret
+        return regret,arm_err
 
     def train_agent(self):
         # use a single buffer
@@ -171,24 +179,24 @@ class env_agent():
             if self.total_steps % (self.update_freq) == 0:
                 self.total_train_iter+=1
                 #update target network
+                #self.agent.update_target_net()
                 self.agent.update_target_net()
                 for station in range(self.N_station):
                     # visual and normalization
                     trainBatch = self.exp_replay.sample(self.batch_size, self.trace_length)
-
                     #very important: convert the structure of the batch
                     trainBatch=self.convert_batch_time(trainBatch,self.batch_size,self.trace_length)
                     #very important
                     past_train_eps = np.vstack(trainBatch[:, 7])
                     past_train_iter = np.vstack(trainBatch[:, 8])
                     tr, t_action = self.agent.train_prepare(trainBatch, station)
-                    tr[t_action==self.N_station]=0 #no reward for those actions
+                   # tr[t_action==self.N_station]=0 #no reward for those actions
                     target_in = np.vstack(trainBatch[:, 3])
                     train_in = np.vstack(trainBatch[:, 0])
-                    train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))*self.distance[station,:]
+                    train_predict_score = self.linucb_agent.return_upper_bound_batch(np.vstack(trainBatch[:, 6]))/self.distance[station,:]
                     tp = train_predict_score.copy()
-                    invalid = tp >= self.e_threshold
-                    valid = tp < self.e_threshold
+                    invalid = tp <= self.eliminate_threshold
+                    valid = tp > self.eliminate_threshold
                     tp[invalid] = 1e4
                     tp[valid] = 0
                     tp[:,station]=0
@@ -202,12 +210,13 @@ class env_agent():
                                              self.agent.predict_score[station]: tp, self.agent.rewards[station]: tr,
                                              self.agent.trainLength: self.trace_length, self.agent.batch_size:self.batch_size,self.agent.station_id:station_in})
 
-                    self.sess.run(self.agent.updateModel[station],
+                    gbn,_=self.sess.run([self.agent.act_globalnorm[station],self.agent.updateModel[station]],
                              feed_dict={self.agent.training_phase: 1, self.agent.targetQ[station]: tz, self.agent.rewards[station]: tr,
                                         self.agent.actions[station]: t_action, self.agent.scalarInput: train_in,
                                         self.agent.iter_holder: past_train_iter, self.agent.eps_holder: past_train_eps,
                                         self.agent.trainLength: self.trace_length, self.agent.batch_size: self.batch_size,self.agent.station_id:station_in})
                     # print('training loss is:....',loss)
+                    self.act_norm.append(gbn)
 
 
     def process_bandit_buffer(self,steps):

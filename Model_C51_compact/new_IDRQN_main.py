@@ -100,7 +100,6 @@ for i in range(main_env.num_episodes):
             newr=r*np.ones((main_env.N_station))
             v1=np.reshape(np.array([s, a, newr, s1,feature,score,featurep,main_env.e,tick]), [1,9])
             main_env.buffer_record(v1)
-            if i>0: main_env.update_bandit()
             main_env.process_bandit_buffer(30)
             main_env.train_agent()
 
@@ -111,26 +110,27 @@ for i in range(main_env.num_episodes):
             sP = s1P
             sa=a #past action
             feature=featurep
-
-
         #preocess bandit buffer
+        if i<= 1500: main_env.update_bandit()
         print('Confidence bound:',main_env.linucb_agent.return_upper_bound(feature))
         #main_env.process_bandit_buffer()
         main_env.sys_tracker.record_time(main_env.env)
-        regret=main_env.bandit_regret()
-        print('the regret of the this round is:',regret)
+        regret,arm_err=main_env.bandit_regret()
+        print('the regret of the this round is:',regret,' max_err:',max(arm_err))
         ilist.append(i)
-        rlist.append(rAll_unshape[0]); rlist_relo.append(rAll_unshape[2]);rlist_wait.append(rAll_unshape[1])
+        rlist.append(rAll); rlist_relo.append(rAll_unshape[2]);rlist_wait.append(rAll_unshape[1])
         plt.clf()
         plt.plot(ilist,rlist, marker='o', markerfacecolor='blue', markersize=4, color='skyblue', linewidth=4,label='totalreward')
-        plt.plot(ilist,rlist_relo,marker='d', color='red', linewidth=2,label='relocation')
-        plt.plot(ilist,rlist_wait, marker='s', color='red', linewidth=2, linestyle='dashed', label="wait")
+        # plt.plot(ilist,rlist_relo,marker='d', color='red', linewidth=2,label='relocation')
+        # plt.plot(ilist,rlist_wait, marker='s', color='red', linewidth=2, linestyle='dashed', label="wait")
         plt.xlabel('Episode')
         plt.legend()
         plt.pause(0.01)
         print('Episode:', i, ', totalreward:', rAll, ', old reward:',rAll_unshape,', total serve:', total_serve, ', total leave:', total_leave, ', total_cpu_time:',time.time()-tinit,
               ', terminal_taxi_distribution:', [len(v) for v in main_env.env.taxi_in_q], ', terminal_passenger:',
-              [len(v) for v in main_env.env.passenger_qtime], main_env.e)
+              [len(v) for v in main_env.env.passenger_qtime], main_env.e,main_env.eliminate_threshold)
+        if i>0:
+             print('Max act norm:', max(main_env.act_norm), 'Mean act norm:', np.mean(main_env.act_norm))
         reward_out.write(str(i) + ',' + str(rAll) + '\n')
        # Periodically save the model.
        #  if i % 15 == 0 and i != 0:
