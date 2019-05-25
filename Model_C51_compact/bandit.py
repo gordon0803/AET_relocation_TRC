@@ -1,7 +1,5 @@
 import numpy as np
 import time
-import scipy
-import numba as nb
 import config
 
 # @nb.jit
@@ -21,7 +19,7 @@ class linucb_agent():
         #feature length: d
         self.alpha=1
         self.round=0;
-        self.lmbda=.5; #penalty parameter for l2 regression
+        self.lmbda=.1; #penalty parameter for l2 regression
         self.d=int(d)
         self.n_action=n_action
         self.Aa=[] #collection of A for each arm
@@ -82,9 +80,9 @@ class linucb_agent():
         # print('process 2:', time.time() - t1)
         #inverse doesn't have to be calculated for each feature
         for action in range(self.n_action):
-            self.AaI[action]=scipy.linalg.inv(self.Aa[action]) #inverse
+            self.AaI[action]=np.linalg.inv(self.Aa[action]) #inverse
             self.theta[action]=np.dot(self.AaI[action],self.ba[action])
-            self.arm_det[action]=np.log(np.sqrt(np.linalg.det(self.Aa[action]))*((np.linalg.det(self.lmbda*np.identity(self.d)))**-0.5)*3)
+            self.arm_det[action]=np.log(np.sqrt(np.linalg.det(self.Aa[action]))*((np.linalg.det(self.lmbda*np.identity(self.d)))**-0.5)*10)
             self.alpha_list[action]=2*np.sqrt(2*self.arm_det[action])+np.sqrt(self.lmbda)
 
 
@@ -132,8 +130,7 @@ class linucb_agent():
         mean=np.array([np.einsum('ij,j->i', feature[:,i*self.d:(i+1)*self.d], self.theta[i]) for i in range(self.n_action)]).T
         bound=np.array([self.alpha_list[i] * np.sqrt(np.einsum('ij,jj,ij->i', feature[:,i*self.d:(i+1)*self.d], self.AaI[i], feature[:,i*self.d:(i+1)*self.d])) for i in range(self.n_action)]).T
         #print(mean[1:3,:],bound[1:3,:],score[1:3,:])
-        count=mean-score<-bound-0*np.sqrt(2*0.1)*scipy.special.erfinv(-0.7)
-        count=np.asarray(mean+bound+0*np.sqrt(2*0.1)*scipy.special.erfinv(-0.9)<threshold,float)*np.asarray(score>threshold,float)
+        count=np.asarray(mean+bound<threshold,float)*np.asarray(score>threshold,float)
         eliminate_total=score>threshold
         arm_err=[]
         for st in range(self.n_action):
@@ -143,9 +140,9 @@ class linucb_agent():
         return err,arm_err
 
 
-    def return_regret(self,feature,score,threshold):
+    def return_regret(self,feature,score,threshold,confidence):
         err,arm_err=self.measure_error(feature,score,threshold)
-        if err>.1+np.sqrt(np.log(10)/(2*len(score)*self.n_action)):
+        if err>confidence+np.sqrt(np.log(10)/(2*len(score)*self.n_action)):
             switch=1
         else:
             switch=0

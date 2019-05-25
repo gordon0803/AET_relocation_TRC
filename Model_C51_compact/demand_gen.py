@@ -48,7 +48,7 @@ if config.NET_CONFIG['case']=='small':
     exp_dist=np.array(tempdist)
     OD_mat=tempOD
 
-    taxi_input = 10
+    taxi_input = 6
 
     simulation_input['N_station'] = N_station;
     simulation_input['distance'] = distance
@@ -60,8 +60,8 @@ if config.NET_CONFIG['case']=='small':
 
 if config.NET_CONFIG['case'] == 'large':
     N_station = 40;
-    distance = np.loadtxt(open('nycdata/selected_dist.csv', 'rb'), delimiter=',')
-    travel_time = np.loadtxt(open('nycdata/selected_time.csv', 'rb'), delimiter=',')
+    distance = np.loadtxt(open('nycdata/new_selected_dist.csv', 'rb'), delimiter=',')
+    travel_time = np.loadtxt(open('nycdata/new_selected_time.csv', 'rb'), delimiter=',')
     distance = distance[:N_station, :N_station]
     travel_time = travel_time[:N_station, :N_station]
     # load the list of OD files, and normalize them to proper time interval
@@ -74,7 +74,7 @@ if config.NET_CONFIG['case'] == 'large':
         tempOD /= normalize_od  # convert into every 30 seconds
         OD_mat.append(tempOD[:N_station, :N_station])
         total_demand += tempOD.sum() * normalize_od
-
+    print(total_demand)
     # OD_mat=np.loadtxt(open('nycdata/od_70.csv','rb'),delimiter=',')
 
     # convert arrival rate into
@@ -103,7 +103,7 @@ if config.NET_CONFIG['case'] == 'large':
             else:
                 exp_dist[t].append(0)
 
-    taxi_input = 50
+    taxi_input = 80
     simulation_input['N_station'] = N_station;
     simulation_input['distance'] = distance
     simulation_input['travel_time'] = travel_time

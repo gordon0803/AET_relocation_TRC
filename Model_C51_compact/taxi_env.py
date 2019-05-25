@@ -8,7 +8,6 @@ import numpy as np
 import taxi_util as util
 from collections import deque
 import math
-from sklearn.preprocessing import normalize
 import config
 
 
@@ -223,7 +222,7 @@ class taxi_simulator():
             # add passengers to the queue
             # new passengers with 0 waiting time
             #a different way of getting ride of for loop
-            self.passenger_qtime[i]+=[0]*n_pass_arrive
+            self.passenger_qtime[i]+=[1]*n_pass_arrive
             expect_wait_append=[self.gamma_pool.pop() for j in range(n_pass_arrive)]
             self.passenger_expect_wait[i]+=expect_wait_append
             # del self.gamma_pool[:n_pass_arrive]
@@ -327,12 +326,14 @@ class taxi_simulator():
     def get_state(self):
         # give the states of the system after all the executions
         # the state of the system is a 3 N by N matrix
-        state = np.ones([self.N, self.N, 5])
-        passenger_gap = -np.ones((self.N, self.N))
+        state = np.ones([self.N, self.N, 6])
+        passenger_gap = np.zeros((self.N, self.N))
         taxi_in_travel = np.zeros((self.N, self.N))
         taxi_in_relocation = np.zeros((self.N, self.N))
         taxi_in_charge=np.zeros((self.N,self.N))
         taxi_in_q=np.zeros((self.N,self.N))
+        number_passenger_gap=np.zeros((self.N,self.N))
+
 
         incoming_taxi=np.array([0]*self.N)
         awaiting_pass=np.array([0]*self.N)
@@ -347,7 +348,8 @@ class taxi_simulator():
 
 
         for i in range(self.N):
-            passenger_gap[i, i] = len(self.passenger_qtime[i])/20
+            passenger_gap[i, i] = sum(self.passenger_qtime[i])/20
+            number_passenger_gap[i,i]=len(self.passenger_qtime)/20
             awaiting_pass[i]=len(self.passenger_qtime[i])
         #
         for t in self.taxi_in_travel:
@@ -367,15 +369,21 @@ class taxi_simulator():
 
         #all states are within 0-1, continuous value
         state[:, :, 0] = passenger_gap;
+        state[:,:,5]=number_passenger_gap
         state[:, :, 1] = taxi_in_travel;
         state[:, :, 2] = taxi_in_relocation;
         state[:, :, 3] = taxi_in_q;
         state[:,:,4] = taxi_in_charge;
+        # state[:,:,5]=number_passenger_gap
         # reward
         total_taxi_in_travel = taxi_in_travel.sum()
         total_taxi_in_relocation = taxi_in_relocation.sum()
         total_taxi_in_charging=taxi_in_charge.sum()
-        reward = -sum(awaiting_pass)/10-total_taxi_in_relocation.sum()+1
+        if config.NET_CONFIG['case']=='small':
+            reward = np.exp(-sum(awaiting_pass)/10-total_taxi_in_relocation.sum())
+        else:
+            reward = np.exp(0.1*(-sum(awaiting_pass)/10-total_taxi_in_relocation.sum()))
+
 
 
 
@@ -386,7 +394,7 @@ class taxi_simulator():
         feature=[]
         score=[]
         for i in range(self.N):
-            feature+=[passenger_gap[i,i],taxi_in_q[i,i],taxi_in_relocation[:,i].sum(),taxi_in_travel[:,i].sum(),taxi_in_relocation[i,:].sum(),taxi_in_travel[i,:].sum()]
+            feature+=[passenger_gap[i,i],number_passenger_gap[i,i],taxi_in_q[i,i],taxi_in_relocation[:,i].sum(),taxi_in_travel[:,i].sum(),taxi_in_relocation[i,:].sum(),taxi_in_travel[i,:].sum()]
             #update score
             if self.taxi_in_q[i]: #drivers waiting passengers
                 self.score[i]=-min(len(self.taxi_in_q[i])/10,1)

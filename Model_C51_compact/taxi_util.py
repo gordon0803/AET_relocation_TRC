@@ -4,8 +4,6 @@
 #utility functions that will be used in the taxi_env
 from collections import deque
 #update the waiting time of passengers in Q
-
-import networkx as nx
 import numpy as np
 
 

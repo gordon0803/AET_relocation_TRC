@@ -50,6 +50,7 @@ ilist=[]
 rlist=[]
 rlist_relo=[]
 rlist_wait=[]
+
 for i in range(main_env.num_episodes):
         main_env.initialize_episode()
         # return the current state of the system
@@ -82,25 +83,32 @@ for i in range(main_env.num_episodes):
             hour=j//config.TRAIN_CONFIG['hour_length']
             tick=hour/(config.TRAIN_CONFIG['max_epLength']/config.TRAIN_CONFIG['hour_length'])
             main_env.tick=tick
-            a = main_env.take_action([s],feature,j,tick)
+            a1,a2,initial_rnn_state = main_env.take_action([s],feature,j,tick) #a1 determines if relocate or not, a2 determines which station to relocate
             #a,invalid_action=main_env.take_action(feature,[s],j,tick)
             if config.TRAIN_CONFIG['use_tracker']:
-                main_env.sys_tracker.record(s, a)
+                main_env.sys_tracker.record(s, a2)
             # move to the next step based on action selected
-            ssp, lfp = main_env.env.step(a)
+            ssp, lfp = main_env.env.step(a2)
             total_serve += ssp
             total_leave += lfp
             # get state and reward
             s1P, r, featurep,score,r2 = main_env.env.get_state()
             s1 = network.processState(s1P, main_env.N_station)
+            vehicle_available=[0]*N_station; #0 means no vehicle available after the transition, 1 means available
+            for k in range(N_station):
+                if main_env.env.taxi_in_q[k]: vehicle_available[k]=1
+
+            new_rnn,  _ = main_env.measure_rnn([s1],j,[[tick]],[np.array([main_env.e])],1,1)
+            bs_mask= main_env.bs_mask
             #record buffer
             #smaller e value
             main_env.epsilon_decay()
             #buffer record
             newr=r*np.ones((main_env.N_station))
-            v1=np.reshape(np.array([s, a, newr, s1,feature,score,featurep,main_env.e,tick]), [1,9])
-            main_env.buffer_record(v1)
-            main_env.process_bandit_buffer(30)
+            v1=np.reshape(np.array([s, a2, newr, s1,feature,score,featurep,main_env.e,tick,a1,new_rnn[0],vehicle_available,bs_mask]), [1,13])
+            v2=np.reshape(np.array([feature,a2,score]),[1,3]) #bandit state to record
+            main_env.buffer_record(v1,v2)
+            main_env.process_bandit_buffer(20)
             main_env.train_agent()
 
             rAll += r
@@ -108,14 +116,15 @@ for i in range(main_env.num_episodes):
             # swap state
             s = s1
             sP = s1P
-            sa=a #past action
+            reloP=a1
+            sa=a2 #past action
             feature=featurep
         #preocess bandit buffer
-        if i<= 1500: main_env.update_bandit()
         print('Confidence bound:',main_env.linucb_agent.return_upper_bound(feature))
         #main_env.process_bandit_buffer()
         main_env.sys_tracker.record_time(main_env.env)
         regret,arm_err=main_env.bandit_regret()
+        main_env.update_bandit()
         print('the regret of the this round is:',regret,' max_err:',max(arm_err))
         ilist.append(i)
         rlist.append(rAll); rlist_relo.append(rAll_unshape[2]);rlist_wait.append(rAll_unshape[1])
@@ -129,9 +138,10 @@ for i in range(main_env.num_episodes):
         print('Episode:', i, ', totalreward:', rAll, ', old reward:',rAll_unshape,', total serve:', total_serve, ', total leave:', total_leave, ', total_cpu_time:',time.time()-tinit,
               ', terminal_taxi_distribution:', [len(v) for v in main_env.env.taxi_in_q], ', terminal_passenger:',
               [len(v) for v in main_env.env.passenger_qtime], main_env.e,main_env.eliminate_threshold)
-        if i>0:
-             print('Max act norm:', max(main_env.act_norm), 'Mean act norm:', np.mean(main_env.act_norm))
         reward_out.write(str(i) + ',' + str(rAll) + '\n')
+        # if i>0:
+        #      print('Max relo norm:',max(main_env.relo_nornm), 'Mean relo norm:',np.mean(main_env.relo_nornm))
+        #      print('Max act norm:', max(main_env.act_norm), 'Mean act norm:', np.mean(main_env.act_norm))
        # Periodically save the model.
        #  if i % 15 == 0 and i != 0:
        #      saver.save(main_env.sess, main_env.path + '/model-' + str(i) + '.cptk')
